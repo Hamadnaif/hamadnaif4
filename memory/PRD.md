@@ -25,6 +25,7 @@ Arabic RTL SaaS platform to build websites and sell domains, similar in concept 
 Marketing site; auth (login/register/reset); customer dashboard (sites+status, domains, subscription, invoices); section-based editor (add/reorder/edit sections, pages, brand, SEO, media, mobile/desktop preview, draft/publish); subdomain publishing + custom domain flow; domain search (provider-gated); 3 configurable plans; payment (gated); admin dashboard with RBAC + audit; security (data isolation, input validation, upload protection, rate limiting on login).
 
 ## Implemented (2026-06)
+- [x] Phase 2: Resend email (contact notifications + password reset), 2 extra templates (6 total), 3 new section types (team/pricing/cta). Homepage upgraded to outclass competitor mnasati.com: 3D builder mockup hero, payment-integrations trust strip, product-facts stats band, "why us" comparison. Verified 35/35 backend + frontend flows.
 - [x] Marketing pages: Home, Templates (4, filter+preview), Pricing (monthly/yearly), Domain search (disabled purchase + notice), About, Contact (working), Terms/Privacy/Refund (CMS-driven).
 - [x] Auth: email/password + Google; forgot/reset (token logged to console); profile + change password.
 - [x] Customer dashboard: sites list with draft/published/suspended status, create from template, edit/preview/publish/unpublish/delete; billing overview + plan upgrade (payment disabled); domains connect (DNS records shown, verify gated); profile.

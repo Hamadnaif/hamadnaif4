@@ -1,0 +1,31 @@
+{
+  "summary": "Phase-2 Manasati (منصتي) testing complete. Focus: Resend email integration, 2 new templates (شركة ناشئة, مطعم وكافيه), and 3 new editor sections (team/pricing/cta). Backend: 35/35 pytest tests PASSED (all 31 original + 4 new: templates count>=6 with both new names, new templates contain team/pricing/cta section types, forgot-password for existing + unknown user, platform contact still persisted in /admin/contacts). Email: every POST to /api/auth/forgot-password and every /api/public/contact + /api/public/site/{sub}/contact triggered a real HTTP POST to https://integrations.emergentagent.com/api/v1/email/send which returned HTTP 202 Accepted — zero 'Email send error/failed' entries in backend logs. Frontend: fresh customer register → dashboard → create-site modal shows exactly 6 template buttons including 'شركة ناشئة' → selected the new startup template and submitted → editor opened → added team, pricing, cta sections via add-section-team/pricing/cta testids → Save (editor-save) → Publish (editor-publish) → visited /s/{subdomain} and confirmed all three section headings ('فريق العمل', 'باقات الأسعار', 'جاهز للبدء') render on the published page with brand colors applied. Regression flows (register/login, existing sections, admin dashboard) unchanged from iteration_1.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_manasati_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "auth.py forgot_password still prints the raw reset token to stdout via `print('[PASSWORD RESET] ... -> token: ...')` even though the email is now delivered by Resend. This leaks a valid password-reset token (1h expiry) to backend logs; anyone with log access could hijack accounts. Remove the print or gate it behind a DEBUG/dev env flag.",
+    "email_service.send_email swallows all errors and returns None. That's fine for the caller, but there is no separate metric/counter for send failures — a silent Resend outage would go unnoticed in production. Consider incrementing a counter or emitting a structured log entry with severity ERROR + tag so ops can alert on it.",
+    "public.site_contact awaits send_contact_notification synchronously inside the request handler. If Resend is slow (30s httpx timeout), the public visitor waits up to 30s for their form submission. Consider `asyncio.create_task(send_contact_notification(...))` or a background task/queue so the response is instant.",
+    "auth.forgot_password: user existence is checked but the endpoint takes noticeably longer when user exists (extra bcrypt-free work + email round-trip) vs when they don't (no work). This creates a timing-attack side channel for user enumeration despite the identical response body. Consider a background task or a fixed-time delay for the miss branch.",
+    "Editor.jsx SECTION_TYPES pricing/team plans use free-text `price` string and `features` textarea split by newline — no validation. A user pasting HTML into features will render as text (good, escaped by React) but empty features (blank line) are auto-filtered which silently drops rows. Not a bug, just be aware.",
+    "SectionRenderer team/pricing/cta components (not opened here but referenced) should be verified to use brand vars `--brand-primary/--brand-accent` consistently — the published page screenshot confirms accent color and CTA button use brand palette, so appears OK.",
+    "Prior iteration_1 comments still stand: /api/auth/me returns 401 on unauth (cosmetic console noise), sites.update_site does not enforce sites plan limit (OK), and there is no CSRF protection beyond SameSite=None cookies."
+  ],
+  "updated_files": ["/app/backend/tests/test_manasati_backend.py"],
+  "success_rate": { "backend": "100% (35/35)", "frontend": "100% of tested flows" },
+  "test_credentials": "Admin hamad6668@gmail.com / Manasati@2026. Fresh customers TEST_ui_*@example.com / pass1234 created during test run.",
+  "seed_data_creation": "New customer TEST_ui_fc47b0aa@example.com with site 'TEST S 2e200' (subdomain test-s-2e200-4b5v, published) using the new startup (شركة ناشئة) template with additional team/pricing/cta sections added on top. Plus several TEST_* users from pytest and platform + site contact submissions that triggered real Resend emails to the admin/owner.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_manasati_backend.py now has 35 tests (added TestEmailAndForgot class + 2 new template tests inside TestPublic). Run with `pytest backend/tests/test_manasati_backend.py -o addopts='' -v` to avoid pytest-xdist parallel-mode flakiness on TestAdmin.test_contacts_list_includes_submissions. Email deliverability confirmed by 202 Accepted from integrations.emergentagent.com — do NOT assert on inbox arrival, just on the absence of 'Email send error' in backend logs. Moyasar and ResellerClub still not implemented; keep skipping them until keys arrive.",
+  "rca of the issue": "No live issues. Email integration works end-to-end (Resend returns 202 Accepted for both password-reset and contact-notification templates, safe-email gate passes, no exceptions logged). New templates and 3 new section types (team/pricing/cta) are wired end-to-end: DB seed → GET /api/public/templates → create-site modal → editor add/edit/save/publish → public /s/{subdomain} render."
+}

@@ -9,6 +9,23 @@ import {
 } from "lucide-react";
 
 const HERO_IMG = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1600&auto=format&fit=crop";
+const MOCKUP = "https://static.prod-images.emergentagent.com/jobs/e8d6ac26-3fd6-4335-afc1-2269c0b714d9/images/c2ba4ed83b8e43568afdc182133cf4c28ea4dfd7dabd02a54cb47b88f966c192.jpeg";
+
+const PARTNERS = ["مدى", "Apple Pay", "Visa", "Mastercard", "Moyasar", "STC Pay"];
+const STATS = [
+  { value: "6+", label: "قوالب جاهزة" },
+  { value: "11", label: "نوع قسم قابل للتخصيص" },
+  { value: "0%", label: "عمولة على مبيعاتك" },
+  { value: "RTL", label: "دعم عربي كامل" },
+];
+const COMPARE = [
+  { f: "إطلاق موقع خلال دقائق", us: true, other: false },
+  { f: "تحكم كامل بالهوية والألوان والخط", us: true, other: false },
+  { f: "توليد محتوى عربي بالذكاء الاصطناعي", us: true, other: false },
+  { f: "نطاق فرعي مجاني + ربط نطاقك الخاص", us: true, other: true },
+  { f: "بدون خبرة برمجية", us: true, other: false },
+  { f: "لوحة تحكم عربية واضحة", us: true, other: true },
+];
 
 const STEPS = [
   { icon: LayoutTemplate, title: "اختر قالبًا", text: "ابدأ من قالب احترافي جاهز يناسب نشاطك." },
@@ -65,10 +82,34 @@ export default function Home() {
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }} className="hidden lg:block">
-            <div className="rounded-3xl overflow-hidden soft-shadow-lg border border-white/10">
-              <img src={HERO_IMG} alt="معاينة موقع" className="w-full h-[420px] object-cover" />
+            <div className="rounded-3xl overflow-hidden soft-shadow-lg border border-white/10 bg-white/5">
+              <img src={MOCKUP} alt="معاينة محرّر المواقع" className="w-full h-[420px] object-cover" />
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Trust / integrations strip */}
+      <section className="border-b border-slate-200 bg-white">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <p className="text-center text-slate-400 text-sm mb-5">تكاملات دفع جاهزة تناسب السوق السعودي والخليجي</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+            {PARTNERS.map((p) => (
+              <span key={p} className="text-slate-500 font-bold text-lg opacity-70 hover:opacity-100 transition-opacity">{p}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats band */}
+      <section className="brand-bg text-white">
+        <div className="max-w-7xl mx-auto px-6 py-14 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          {STATS.map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
+              <div className="font-head text-4xl sm:text-5xl font-extrabold gold-text">{s.value}</div>
+              <div className="text-white/70 text-sm mt-2">{s.label}</div>
+            </motion.div>
+          ))}
         </div>
       </section>
 
@@ -106,6 +147,28 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Why us comparison */}
+      <section className="max-w-4xl mx-auto px-6 py-20">
+        <div className="text-center mb-10">
+          <h2 className="font-head text-3xl sm:text-4xl font-extrabold brand-text">لماذا منصتي؟</h2>
+          <p className="text-slate-600 mt-3">مقارنة سريعة بين منصتي والطرق التقليدية لبناء المواقع.</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200 soft-shadow overflow-hidden">
+          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 px-6 py-4 bg-slate-50 border-b border-slate-200 text-sm font-bold">
+            <span className="text-slate-500">الميزة</span>
+            <span className="brand-text text-center w-20">منصتي</span>
+            <span className="text-slate-400 text-center w-24">طرق أخرى</span>
+          </div>
+          {COMPARE.map((c, i) => (
+            <div key={i} className="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 px-6 py-4 border-b border-slate-100 last:border-0">
+              <span className="text-slate-700">{c.f}</span>
+              <span className="w-20 flex justify-center">{c.us ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <span className="text-slate-300">—</span>}</span>
+              <span className="w-24 flex justify-center">{c.other ? <CheckCircle2 className="w-5 h-5 text-slate-300" /> : <span className="text-slate-300">—</span>}</span>
+            </div>
+          ))}
         </div>
       </section>
 

@@ -77,8 +77,18 @@ class TestPublic:
         r = requests.get(f"{API}/public/templates")
         assert r.status_code == 200
         data = r.json()
-        assert isinstance(data, list) and len(data) >= 4, f"Expected >=4 templates, got {len(data)}"
+        assert isinstance(data, list) and len(data) >= 6, f"Expected >=6 templates, got {len(data)}"
         assert all("id" in t and "name" in t and "config" in t for t in data)
+        names = {t["name"] for t in data}
+        assert "شركة ناشئة" in names, f"missing startup template, got {names}"
+        assert "مطعم وكافيه" in names, f"missing restaurant template, got {names}"
+
+    def test_new_templates_have_new_sections(self):
+        r = requests.get(f"{API}/public/templates")
+        data = r.json()
+        startup = next(t for t in data if t["name"] == "شركة ناشئة")
+        types = {s["type"] for p in startup["config"]["pages"] for s in p["sections"]}
+        assert {"team", "pricing", "cta"}.issubset(types), f"startup missing sections, got {types}"
 
     def test_plans(self):
         r = requests.get(f"{API}/public/plans")
@@ -106,6 +116,36 @@ class TestPublic:
                                 "phone": "0500", "message": "Hello platform"})
         assert r.status_code == 200
         assert r.json().get("ok") is True
+
+
+# ---------- Email + forgot-password (Phase-2) ----------
+class TestEmailAndForgot:
+    def test_forgot_password_existing_user(self, customer_session):
+        # customer_session was registered earlier
+        r = requests.post(f"{API}/auth/forgot-password",
+                          json={"email": customer_session._email})
+        assert r.status_code == 200
+        assert r.json().get("ok") is True
+
+    def test_forgot_password_unknown_user(self):
+        # Should still return ok (do not leak whether email exists)
+        r = requests.post(f"{API}/auth/forgot-password",
+                          json={"email": "TEST_nonexistent_zzz@example.com"})
+        assert r.status_code == 200
+        assert r.json().get("ok") is True
+
+    def test_platform_contact_still_persists(self, admin_session):
+        # trigger a fresh platform contact and verify it appears in /admin/contacts
+        unique_msg = f"TEST_email_check_{uuid.uuid4().hex[:6]}"
+        r = requests.post(f"{API}/public/contact",
+                          json={"name": "Bob", "email": "TEST_bob@example.com",
+                                "phone": "0555", "message": unique_msg})
+        assert r.status_code == 200
+        r2 = admin_session.get(f"{API}/admin/contacts")
+        assert r2.status_code == 200
+        msgs = r2.json()
+        found = any(m.get("message") == unique_msg for m in msgs)
+        assert found, "platform contact submission not persisted in /admin/contacts"
 
 
 # ---------- Auth ----------
