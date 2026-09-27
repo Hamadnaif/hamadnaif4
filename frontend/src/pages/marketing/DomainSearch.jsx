@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2, AlertCircle, HelpCircle } from "lucide-react";
+import { Search, Loader2, AlertCircle, HelpCircle, CheckCircle2, XCircle } from "lucide-react";
 
 export default function DomainSearch() {
   const [q, setQ] = useState("");
@@ -44,15 +44,19 @@ export default function DomainSearch() {
           {res.results.map((r) => (
             <div key={r.domain} className="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-4 soft-shadow" data-testid={`domain-result-${r.tld}`}>
               <div className="flex items-center gap-3">
-                <span className="font-bold text-lg brand-text">{r.domain}</span>
-                <span className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-500 rounded-full px-2 py-1"><HelpCircle className="w-3 h-3" /> التوفر غير مؤكد</span>
+                <span className="font-bold text-lg brand-text" dir="ltr">{r.domain}</span>
+                {r.available === true && <span className="inline-flex items-center gap-1 text-xs bg-green-50 text-green-600 rounded-full px-2 py-1"><CheckCircle2 className="w-3 h-3" /> متوفر</span>}
+                {r.available === false && <span className="inline-flex items-center gap-1 text-xs bg-red-50 text-red-500 rounded-full px-2 py-1"><XCircle className="w-3 h-3" /> محجوز</span>}
+                {r.available == null && <span className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-500 rounded-full px-2 py-1"><HelpCircle className="w-3 h-3" /> التوفر غير مؤكد</span>}
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-end">
                   <div className="font-bold brand-text">{r.price} {r.currency}<span className="text-slate-400 text-xs">/سنة</span></div>
                   <div className="text-xs text-slate-400">تجديد {r.renew_price} {r.currency}</div>
                 </div>
-                <Button disabled className="rounded-full bg-slate-200 text-slate-500 cursor-not-allowed" data-testid={`domain-buy-${r.tld}`}>الشراء معطّل</Button>
+                <Button disabled className={`rounded-full ${r.available === true ? "bg-slate-200 text-slate-500" : "bg-slate-200 text-slate-500"} cursor-not-allowed`} data-testid={`domain-buy-${r.tld}`}>
+                  {r.available === true ? "الشراء قريبًا" : "الشراء معطّل"}
+                </Button>
               </div>
             </div>
           ))}

@@ -7,6 +7,7 @@ from bson import ObjectId
 
 from db import db, serialize, to_oid
 from email_service import send_contact_notification
+import domain_provider
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -143,21 +144,38 @@ async def domain_search(q: str):
     q = re.sub(r"[^a-z0-9-]", "", q.split(".")[0])
     if not q:
         raise HTTPException(status_code=400, detail="أدخل اسم نطاق صالح")
-    settings = await db.settings.find_one({"_key": "platform"})
-    enabled = bool(settings and settings.get("integrations", {}).get("domain_reseller_enabled"))
-    tlds = [".com", ".net", ".sa", ".com.sa", ".store", ".online"]
-    prices = {".com": 45, ".net": 55, ".sa": 120, ".com.sa": 140, ".store": 90, ".online": 70}
+
+    tlds = domain_provider.SUPPORTED_TLDS
+    prices = domain_provider.PRICES
+    availability = {}
+    enabled = domain_provider.is_configured()
+    message = None
+
+    if enabled:
+        try:
+            availability = await domain_provider.check_availability(q, tlds)
+        except Exception:
+            enabled = False
+            message = ("تعذّر الاتصال بمزوّد النطاقات. تأكد من إدراج عنوان IP الخاص بالخادم في القائمة "
+                       "البيضاء لدى ResellerClub ومن صحة بيانات الحساب.")
+    else:
+        status = domain_provider.config_status()
+        missing = []
+        if not status["reseller_id"]:
+            missing.append("رقم الموزّع (Reseller ID)")
+        if not status["api_key"]:
+            missing.append("مفتاح API")
+        extra = ("، وإدراج عنوان IP الخادم في القائمة البيضاء" if status["api_key"] else "")
+        message = (f"البحث الحقيقي معطّل حتى إكمال ربط ResellerClub (المتبقّي: {'، '.join(missing)}{extra}). "
+                   "الأسعار تجريبية.")
+
     results = [{
-        "domain": f"{q}{tld}",
-        "tld": tld,
-        "price": prices.get(tld),
-        "renew_price": prices.get(tld),
+        "domain": f"{q}.{t}",
+        "tld": t,
+        "price": prices.get(t),
+        "renew_price": prices.get(t),
         "currency": "SAR",
-        "available": None,  # unknown until real provider connected
-    } for tld in tlds]
-    return {
-        "query": q,
-        "enabled": enabled,
-        "results": results,
-        "message": None if enabled else "البحث الحقيقي والشراء معطّلان حتى ربط مزوّد النطاقات (ResellerClub). الأسعار تجريبية.",
-    }
+        "available": availability.get(t) if enabled else None,
+    } for t in tlds]
+
+    return {"query": q, "enabled": enabled, "results": results, "message": message}
