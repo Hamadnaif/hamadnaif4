@@ -217,6 +217,68 @@ function MapBlock({ d }) {
   );
 }
 
+function TeamBlock({ d }) {
+  return (
+    <SectionWrap className="bg-white">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-10">
+          {d.subtitle && <span className="gold-text font-bold text-sm">{d.subtitle}</span>}
+          <h2 className="font-head text-3xl font-extrabold brand-text mt-1">{d.title}</h2>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+          {(d.members || []).map((m, i) => (
+            <div key={i} className="text-center p-6 rounded-2xl bg-[#FAFAFA] border border-slate-200">
+              <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-4 bg-slate-200">
+                {m.image ? <img src={mediaUrl(m.image)} alt={m.name} className="w-full h-full object-cover" /> : <span className="w-full h-full grid place-items-center brand-text font-bold text-2xl">{(m.name || "?").charAt(0)}</span>}
+              </div>
+              <h3 className="font-bold brand-text">{m.name}</h3>
+              <p className="text-slate-500 text-sm">{m.role}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </SectionWrap>
+  );
+}
+
+function PricingBlock({ d }) {
+  return (
+    <SectionWrap className="bg-[#FAFAFA]">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-10">
+          {d.subtitle && <span className="gold-text font-bold text-sm">{d.subtitle}</span>}
+          <h2 className="font-head text-3xl font-extrabold brand-text mt-1">{d.title}</h2>
+        </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          {(d.plans || []).map((p, i) => (
+            <div key={i} className={`rounded-2xl p-7 bg-white border ${p.highlight ? "border-[var(--brand-accent)] soft-shadow-lg" : "border-slate-200 soft-shadow"}`}>
+              {p.highlight && <span className="inline-block mb-3 text-xs font-bold brand-accent-bg text-white rounded-full px-3 py-1">مميّزة</span>}
+              <h3 className="font-head text-xl font-extrabold brand-text">{p.name}</h3>
+              <div className="my-4"><span className="text-4xl font-extrabold brand-text">{p.price}</span><span className="text-slate-400 text-sm"> / {p.period}</span></div>
+              <ul className="space-y-2">
+                {(p.features || []).map((f, x) => <li key={x} className="flex items-center gap-2 text-slate-600 text-sm"><CheckCircle2 className="w-4 h-4 text-green-500" /> {f}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </SectionWrap>
+  );
+}
+
+function CtaBlock({ d }) {
+  return (
+    <section className="px-6 py-16">
+      <div className="max-w-5xl mx-auto rounded-3xl brand-bg text-white p-12 text-center relative overflow-hidden">
+        <div className="absolute -bottom-20 -end-20 w-72 h-72 rounded-full" style={{ background: "radial-gradient(circle, rgba(212,175,55,0.3), transparent 70%)" }} />
+        <h2 className="font-head text-3xl font-extrabold mb-3 relative">{d.title}</h2>
+        {d.subtitle && <p className="text-white/80 mb-7 relative">{d.subtitle}</p>}
+        {d.button_text && <a href={d.button_link || "#"} className="relative inline-flex rounded-full px-9 py-3 font-bold text-[#0A2540]" style={{ background: "var(--brand-secondary)" }}>{d.button_text}</a>}
+      </div>
+    </section>
+  );
+}
+
 function FooterBlock({ d }) {
   return (
     <footer className="brand-bg text-white px-6 py-10 text-center">
@@ -240,6 +302,9 @@ export default function SectionRenderer({ section, onContact, settings }) {
     case "image": return <ImageBlock d={d} />;
     case "products": return <Products d={d} />;
     case "testimonials": return <Testimonials d={d} />;
+    case "team": return <TeamBlock d={d} />;
+    case "pricing": return <PricingBlock d={d} />;
+    case "cta": return <CtaBlock d={d} />;
     case "faq": return <Faq d={d} />;
     case "contact": return <Contact d={d} onContact={onContact} settings={settings} />;
     case "map": return <MapBlock d={d} />;

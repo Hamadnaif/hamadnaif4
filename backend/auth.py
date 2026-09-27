@@ -266,7 +266,14 @@ async def forgot_password(body: ForgotBody):
             "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
             "used": False,
         })
+        frontend = os.environ.get("FRONTEND_URL", "").rstrip("/")
+        reset_link = f"{frontend}/reset-password?token={token}"
         print(f"[PASSWORD RESET] {email} -> token: {token}")
+        try:
+            from email_service import send_password_reset
+            await send_password_reset(email, user.get("name", ""), reset_link)
+        except Exception as e:
+            print(f"[PASSWORD RESET EMAIL ERROR] {e}")
     return {"ok": True, "message": "إن كان البريد مسجّلًا فستصلك رسالة لإعادة التعيين"}
 
 

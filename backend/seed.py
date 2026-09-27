@@ -29,7 +29,7 @@ DEFAULT_SETTINGS = {
         "moyasar_enabled": False,
         "domain_reseller_enabled": False,
         "domain_reseller_provider": "ResellerClub",
-        "email_enabled": False,
+        "email_enabled": True,
     },
 }
 
@@ -109,6 +109,32 @@ def _contact():
 def _footer(name):
     return {"id": "sec_footer", "type": "footer", "data": {
         "text": f"© {name} - جميع الحقوق محفوظة", "links": []}}
+
+
+def _team():
+    return {"id": "sec_team", "type": "team", "data": {
+        "title": "فريق العمل", "subtitle": "نخبة من المحترفين",
+        "members": [
+            {"name": "اسم العضو", "role": "المسمى الوظيفي", "image": ""},
+            {"name": "اسم العضو", "role": "المسمى الوظيفي", "image": ""},
+            {"name": "اسم العضو", "role": "المسمى الوظيفي", "image": ""},
+        ]}}
+
+
+def _pricing():
+    return {"id": "sec_pricing", "type": "pricing", "data": {
+        "title": "باقات الأسعار", "subtitle": "اختر ما يناسبك",
+        "plans": [
+            {"name": "أساسي", "price": "99", "period": "شهريًا", "features": ["ميزة أولى", "ميزة ثانية", "ميزة ثالثة"], "highlight": False},
+            {"name": "احترافي", "price": "199", "period": "شهريًا", "features": ["كل ما سبق", "ميزة إضافية", "دعم أولوية"], "highlight": True},
+            {"name": "متقدم", "price": "349", "period": "شهريًا", "features": ["كل المزايا", "مدير حساب", "تقارير مخصصة"], "highlight": False},
+        ]}}
+
+
+def _cta():
+    return {"id": "sec_cta", "type": "cta", "data": {
+        "title": "جاهز للبدء؟", "subtitle": "تواصل معنا اليوم واحصل على استشارة مجانية.",
+        "button_text": "احجز الآن", "button_link": "#contact"}}
 
 
 IMG = "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1600&auto=format&fit=crop"
@@ -192,6 +218,43 @@ def _template_defs():
                 }],
             },
         },
+        {
+            "name": "شركة ناشئة", "category": "أعمال",
+            "description": "صفحة هبوط لشركة ناشئة مع باقات أسعار وفريق عمل ودعوة لإجراء.",
+            "thumbnail": IMG2, "is_active": True,
+            "config": {
+                "brand": {"colors": {"primary": "#4338CA", "secondary": "#F59E0B", "accent": "#06B6D4"}, "font": "Tajawal"},
+                "pages": [{
+                    "id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
+                    "seo": {"title": "شركتنا الناشئة", "description": "حلول مبتكرة لمشروعك.", "image": ""},
+                    "sections": [
+                        _hero("نطوّر أفكارك إلى منتجات", "منصة متكاملة تساعد شركتك على النمو بسرعة.", IMG2),
+                        _services([("سرعة", "إطلاق أسرع لمنتجك."), ("مرونة", "حلول قابلة للتوسّع."), ("دعم", "فريق يساندك دائمًا.")]),
+                        _pricing(), _team(), _cta(), _footer("شركتنا الناشئة"),
+                    ],
+                }],
+            },
+        },
+        {
+            "name": "مطعم وكافيه", "category": "إبداعي",
+            "description": "موقع أنيق لمطعم أو كافيه مع معرض للأطباق ونموذج حجز/تواصل وخريطة.",
+            "thumbnail": IMG3, "is_active": True,
+            "config": {
+                "brand": {"colors": {"primary": "#7C2D12", "secondary": "#D97706", "accent": "#B45309"}, "font": "Cairo"},
+                "pages": [{
+                    "id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
+                    "seo": {"title": "مطعمنا", "description": "نكهات تجمع الأصالة والإبداع.", "image": ""},
+                    "sections": [
+                        _hero("نكهة لا تُنسى", "أطباق شهية تُحضّر بحب من أجود المكوّنات.", IMG3),
+                        _gallery([IMG, IMG2, IMG3, IMG, IMG2, IMG3]),
+                        _text("قصتنا", "نبذة عن مطعمنا ورسالتنا في تقديم أفضل تجربة طعام لضيوفنا."),
+                        _testimonials(), _contact(),
+                        {"id": "sec_map", "type": "map", "data": {"title": "موقعنا", "address": "Riyadh"}},
+                        _footer("مطعمنا"),
+                    ],
+                }],
+            },
+        },
     ]
 
 
@@ -235,7 +298,8 @@ async def run_seed():
         for p in DEFAULT_PLANS:
             await db.plans.insert_one({**p, "created_at": _now()})
 
-    # templates
-    if await db.templates.count_documents({}) == 0:
-        for t in _template_defs():
+    # templates (insert any missing by name so new templates are added on redeploy)
+    existing_names = set(await db.templates.distinct("name"))
+    for t in _template_defs():
+        if t["name"] not in existing_names:
             await db.templates.insert_one({**t, "created_at": _now()})

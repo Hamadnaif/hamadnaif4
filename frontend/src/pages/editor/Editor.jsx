@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowRight, Save, Rocket, Monitor, Smartphone, Plus, Trash2, ChevronUp, ChevronDown,
   Loader2, Image as ImageIcon, Sparkles, Palette, FileText, Layers, Eye, Home, Star,
+  Users, DollarSign, Megaphone,
 } from "lucide-react";
 
 const SECTION_TYPES = [
@@ -17,6 +18,9 @@ const SECTION_TYPES = [
   { type: "gallery", label: "معرض صور", icon: ImageIcon },
   { type: "image", label: "صورة", icon: ImageIcon },
   { type: "products", label: "منتجات للعرض", icon: Layers },
+  { type: "team", label: "فريق العمل", icon: Users },
+  { type: "pricing", label: "جدول أسعار", icon: DollarSign },
+  { type: "cta", label: "لافتة دعوة", icon: Megaphone },
   { type: "testimonials", label: "آراء العملاء", icon: Star },
   { type: "faq", label: "أسئلة شائعة", icon: FileText },
   { type: "contact", label: "نموذج تواصل", icon: FileText },
@@ -34,6 +38,9 @@ function defaultSection(type) {
     gallery: { title: "معرض الأعمال", images: [] },
     image: { image: "", caption: "" },
     products: { title: "منتجاتنا", items: [{ name: "منتج", description: "وصف", price: "", image: "" }] },
+    team: { title: "فريق العمل", subtitle: "نخبة من المحترفين", members: [{ name: "اسم العضو", role: "المسمى الوظيفي", image: "" }] },
+    pricing: { title: "باقات الأسعار", subtitle: "اختر ما يناسبك", plans: [{ name: "باقة", price: "99", period: "شهريًا", features: ["ميزة"], highlight: false }] },
+    cta: { title: "جاهز للبدء؟", subtitle: "تواصل معنا اليوم.", button_text: "احجز الآن", button_link: "#contact" },
     testimonials: { title: "آراء العملاء", items: [{ name: "عميل", role: "", text: "رأي العميل" }] },
     faq: { title: "أسئلة شائعة", items: [{ q: "سؤال؟", a: "إجابة." }] },
     contact: { title: "تواصل معنا", subtitle: "سنسعد بالرد عليك", show_phone: true, show_email: true },
@@ -166,6 +173,44 @@ function SectionProperties({ section, onChange, siteName }) {
       return (<>
         <Field label="العنوان"><input value={d.title || ""} onChange={(e) => set("title", e.target.value)} className={inputCls} /></Field>
         <Field label="الآراء"><ListEditor items={d.items || []} onChange={(v) => set("items", v)} addLabel="إضافة رأي" fields={[{ key: "name", label: "الاسم" }, { key: "role", label: "الصفة" }, { key: "text", label: "الرأي", type: "textarea" }]} /></Field>
+      </>);
+    case "team":
+      return (<>
+        <Field label="العنوان"><input value={d.title || ""} onChange={(e) => set("title", e.target.value)} className={inputCls} /></Field>
+        <Field label="العنوان الفرعي"><input value={d.subtitle || ""} onChange={(e) => set("subtitle", e.target.value)} className={inputCls} /></Field>
+        <Field label="الأعضاء"><ListEditor items={d.members || []} onChange={(v) => set("members", v)} addLabel="إضافة عضو" fields={[{ key: "name", label: "الاسم" }, { key: "role", label: "المسمى" }, { key: "image", label: "صورة", type: "image" }]} /></Field>
+      </>);
+    case "pricing":
+      return (<>
+        <Field label="العنوان"><input value={d.title || ""} onChange={(e) => set("title", e.target.value)} className={inputCls} /></Field>
+        <Field label="العنوان الفرعي"><input value={d.subtitle || ""} onChange={(e) => set("subtitle", e.target.value)} className={inputCls} /></Field>
+        <Field label="الباقات">
+          <div className="space-y-3">
+            {(d.plans || []).map((pl, i) => {
+              const upd = (k, v) => { const c = [...d.plans]; c[i] = { ...c[i], [k]: v }; set("plans", c); };
+              return (
+                <div key={i} className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="flex justify-between"><span className="text-xs font-bold text-slate-400">#{i + 1}</span><button onClick={() => set("plans", d.plans.filter((_, x) => x !== i))} className="text-red-500"><Trash2 className="w-4 h-4" /></button></div>
+                  <input placeholder="الاسم" value={pl.name || ""} onChange={(e) => upd("name", e.target.value)} className={inputCls} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input placeholder="السعر" value={pl.price || ""} onChange={(e) => upd("price", e.target.value)} className={inputCls} />
+                    <input placeholder="المدة" value={pl.period || ""} onChange={(e) => upd("period", e.target.value)} className={inputCls} />
+                  </div>
+                  <textarea placeholder="المزايا (سطر لكل ميزة)" value={(pl.features || []).join("\n")} onChange={(e) => upd("features", e.target.value.split("\n").filter(Boolean))} className={inputCls} rows={3} />
+                  <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={!!pl.highlight} onChange={(e) => upd("highlight", e.target.checked)} /> مميّزة</label>
+                </div>
+              );
+            })}
+            <Button type="button" variant="outline" size="sm" onClick={() => set("plans", [...(d.plans || []), { name: "باقة", price: "", period: "شهريًا", features: [], highlight: false }])} className="w-full rounded-lg"><Plus className="w-4 h-4 ms-1" /> إضافة باقة</Button>
+          </div>
+        </Field>
+      </>);
+    case "cta":
+      return (<>
+        <Field label="العنوان"><input value={d.title || ""} onChange={(e) => set("title", e.target.value)} className={inputCls} /></Field>
+        <Field label="الوصف"><textarea value={d.subtitle || ""} onChange={(e) => set("subtitle", e.target.value)} className={inputCls} rows={2} /></Field>
+        <Field label="نص الزر"><input value={d.button_text || ""} onChange={(e) => set("button_text", e.target.value)} className={inputCls} /></Field>
+        <Field label="رابط الزر"><input value={d.button_link || ""} onChange={(e) => set("button_link", e.target.value)} className={inputCls} dir="ltr" /></Field>
       </>);
     case "faq":
       return (<>

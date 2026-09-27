@@ -1,10 +1,12 @@
 import re
+import os
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 from bson import ObjectId
 
 from db import db, serialize, to_oid
+from email_service import send_contact_notification
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -68,6 +70,11 @@ async def site_contact(subdomain: str, body: ContactBody):
         "phone": (body.phone or "").strip(), "message": body.message.strip(),
         "read": False, "created_at": _now(),
     })
+    owner = await db.users.find_one({"_id": to_oid(site["owner_id"])})
+    if owner and owner.get("email"):
+        await send_contact_notification(owner["email"], f"موقعك «{site.get('name')}»",
+                                        body.name.strip(), body.email.lower(),
+                                        (body.phone or "").strip(), body.message.strip())
     return {"ok": True, "message": "تم إرسال رسالتك بنجاح"}
 
 
@@ -79,6 +86,11 @@ async def platform_contact(body: ContactBody):
         "phone": (body.phone or "").strip(), "message": body.message.strip(),
         "read": False, "created_at": _now(),
     })
+    admin_email = os.environ.get("ADMIN_EMAIL")
+    if admin_email:
+        await send_contact_notification(admin_email, "نموذج تواصل المنصة",
+                                        body.name.strip(), body.email.lower(),
+                                        (body.phone or "").strip(), body.message.strip())
     return {"ok": True, "message": "تم إرسال رسالتك، سنتواصل معك قريبًا"}
 
 
