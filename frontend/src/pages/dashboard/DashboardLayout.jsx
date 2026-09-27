@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useBrand } from "@/context/BrandContext";
-import { LayoutGrid, CreditCard, Globe, User, LogOut, Sparkles, ExternalLink } from "lucide-react";
+import { LayoutGrid, CreditCard, Globe, User, LogOut, Sparkles, ExternalLink, ShoppingBag } from "lucide-react";
 
 const NAV = [
   { to: "/dashboard", label: "مواقعي", icon: LayoutGrid },
+  { to: "/dashboard/orders", label: "طلبات المتجر", icon: ShoppingBag },
   { to: "/dashboard/billing", label: "الاشتراك والفواتير", icon: CreditCard },
   { to: "/dashboard/domains", label: "النطاقات", icon: Globe },
   { to: "/dashboard/profile", label: "الملف الشخصي", icon: User },

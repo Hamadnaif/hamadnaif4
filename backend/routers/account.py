@@ -32,6 +32,12 @@ async def overview(user: dict = Depends(get_current_user)):
     }
 
 
+@router.get("/store-orders")
+async def store_orders(user: dict = Depends(get_current_user)):
+    docs = await db.store_orders.find({"owner_id": user["id"]}).sort("created_at", -1).to_list(500)
+    return [serialize(d) for d in docs]
+
+
 class SubscribeBody(BaseModel):
     plan_id: str
     cycle: str = "monthly"

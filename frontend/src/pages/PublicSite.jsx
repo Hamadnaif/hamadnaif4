@@ -24,6 +24,11 @@ export default function PublicSite() {
     catch { return false; }
   };
 
+  const onOrder = async (order) => {
+    try { await api.post(`/public/site/${subdomain}/order`, order); return true; }
+    catch { return false; }
+  };
+
   if (site === undefined) return <div className="min-h-screen grid place-items-center"><Loader2 className="w-8 h-8 animate-spin brand-accent-text" /></div>;
   if (site === null) return (
     <div className="min-h-screen grid place-items-center bg-slate-50 text-center px-6">
@@ -55,7 +60,7 @@ export default function PublicSite() {
       </nav>
       <div>
         {(page?.sections || []).map((s) => (
-          <SectionRenderer key={s.id} section={s} onContact={onContact} settings={{ contact_email: "", contact_phone: "" }} />
+          <SectionRenderer key={s.id} section={s} onContact={onContact} onOrder={onOrder} settings={{ contact_email: "", contact_phone: "" }} />
         ))}
       </div>
     </div>

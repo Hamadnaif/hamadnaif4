@@ -137,6 +137,21 @@ def _cta():
         "button_text": "احجز الآن", "button_link": "#contact"}}
 
 
+def _store():
+    return {"id": "sec_store", "type": "store", "data": {
+        "title": "منتجاتنا", "currency": "SAR",
+        "products": [
+            {"name": "منتج أول", "description": "وصف مختصر للمنتج", "price": "120", "image": IMG},
+            {"name": "منتج ثاني", "description": "وصف مختصر للمنتج", "price": "90", "image": IMG2},
+            {"name": "منتج ثالث", "description": "وصف مختصر للمنتج", "price": "150", "image": IMG3},
+        ]}}
+
+
+def _logos():
+    return {"id": "sec_logos", "type": "logos", "data": {
+        "title": "شركاؤنا وعملاؤنا", "logos": []}}
+
+
 IMG = "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1600&auto=format&fit=crop"
 IMG2 = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1600&auto=format&fit=crop"
 IMG3 = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1600&auto=format&fit=crop"
@@ -251,6 +266,22 @@ def _template_defs():
                         _testimonials(), _contact(),
                         {"id": "sec_map", "type": "map", "data": {"title": "موقعنا", "address": "Riyadh"}},
                         _footer("مطعمنا"),
+                    ],
+                }],
+            },
+        },
+        {
+            "name": "متجر إلكتروني", "category": "متاجر",
+            "description": "متجر إلكتروني بسلة شراء وطلبات فعلية، يناسب بيع المنتجات مباشرة للعملاء.",
+            "thumbnail": IMG, "is_active": True,
+            "config": {
+                "brand": {"colors": {"primary": "#0F172A", "secondary": "#F59E0B", "accent": "#10B981"}, "font": "Tajawal"},
+                "pages": [{
+                    "id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
+                    "seo": {"title": "متجرنا", "description": "تسوّق أفضل المنتجات بأسعار مميزة.", "image": ""},
+                    "sections": [
+                        _hero("تسوّق الأفضل", "منتجات مختارة بعناية تصلك أينما كنت.", IMG),
+                        _store(), _logos(), _contact(), _footer("متجرنا"),
                     ],
                 }],
             },

@@ -25,6 +25,7 @@ import DashboardLayout from "@/pages/dashboard/DashboardLayout";
 import Sites from "@/pages/dashboard/Sites";
 import Billing from "@/pages/dashboard/Billing";
 import Domains from "@/pages/dashboard/Domains";
+import StoreOrders from "@/pages/dashboard/StoreOrders";
 import Profile from "@/pages/dashboard/Profile";
 import Editor from "@/pages/editor/Editor";
 
@@ -67,6 +68,7 @@ function AppRouter() {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<Sites />} />
+          <Route path="/dashboard/orders" element={<StoreOrders />} />
           <Route path="/dashboard/billing" element={<Billing />} />
           <Route path="/dashboard/domains" element={<Domains />} />
           <Route path="/dashboard/profile" element={<Profile />} />

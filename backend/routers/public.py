@@ -94,6 +94,49 @@ async def platform_contact(body: ContactBody):
     return {"ok": True, "message": "تم إرسال رسالتك، سنتواصل معك قريبًا"}
 
 
+class OrderItem(BaseModel):
+    name: str
+    price: float
+    qty: int
+
+
+class StoreOrderBody(BaseModel):
+    customer_name: str
+    phone: str
+    address: str | None = None
+    note: str | None = None
+    items: list[OrderItem]
+    total: float
+    currency: str = "SAR"
+
+
+@router.post("/site/{subdomain}/order")
+async def create_store_order(subdomain: str, body: StoreOrderBody):
+    site = await db.sites.find_one({"subdomain": subdomain})
+    if not site or site.get("status") != "published":
+        raise HTTPException(status_code=404, detail="الموقع غير متاح")
+    if not body.items:
+        raise HTTPException(status_code=400, detail="السلة فارغة")
+    order = {
+        "site_id": str(site["_id"]), "owner_id": site["owner_id"],
+        "site_name": site.get("name"), "customer_name": body.customer_name.strip(),
+        "phone": body.phone.strip(), "address": (body.address or "").strip(),
+        "note": (body.note or "").strip(),
+        "items": [i.model_dump() for i in body.items],
+        "total": body.total, "currency": body.currency,
+        "status": "new", "payment_status": "unpaid", "created_at": _now(),
+    }
+    res = await db.store_orders.insert_one(order)
+    owner = await db.users.find_one({"_id": to_oid(site["owner_id"])})
+    if owner and owner.get("email"):
+        lines = "، ".join([f"{i.name} ×{i.qty}" for i in body.items])
+        msg = f"طلب جديد من {body.customer_name} (هاتف {body.phone}). المنتجات: {lines}. الإجمالي: {body.total} {body.currency}. العنوان: {body.address or '-'}"
+        await send_contact_notification(owner["email"], f"طلب جديد على متجر «{site.get('name')}»",
+                                        body.customer_name.strip(), owner["email"], body.phone.strip(), msg)
+    return {"ok": True, "order_id": str(res.inserted_id),
+            "message": "تم استلام طلبك بنجاح، سنتواصل معك لتأكيد الطلب."}
+
+
 @router.get("/domain/search")
 async def domain_search(q: str):
     q = q.lower().strip()

@@ -3,6 +3,7 @@ import { mediaUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   Sparkles, Star, ChevronDown, Mail, Phone, MapPin, Quote, CheckCircle2,
+  ShoppingCart, Plus, Minus, X,
 } from "lucide-react";
 
 function SectionWrap({ children, className = "" }) {
@@ -292,7 +293,108 @@ function FooterBlock({ d }) {
   );
 }
 
-export default function SectionRenderer({ section, onContact, settings }) {
+function LogosBlock({ d }) {
+  return (
+    <SectionWrap className="bg-white">
+      <div className="max-w-6xl mx-auto text-center">
+        {d.title && <h2 className="font-head text-2xl font-extrabold brand-text mb-8">{d.title}</h2>}
+        <div className="flex flex-wrap items-center justify-center gap-8">
+          {(d.logos || []).length === 0 ? (
+            <p className="text-slate-400 text-sm">أضف شعارات عملائك من لوحة التحرير</p>
+          ) : d.logos.map((lg, i) => (
+            <img key={i} src={mediaUrl(lg)} alt="" className="h-12 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity grayscale hover:grayscale-0" />
+          ))}
+        </div>
+      </div>
+    </SectionWrap>
+  );
+}
+
+function StoreBlock({ d, onOrder }) {
+  const products = d.products || [];
+  const currency = d.currency || "SAR";
+  const [cart, setCart] = useState({});
+  const [checkout, setCheckout] = useState(false);
+  const [form, setForm] = useState({ customer_name: "", phone: "", address: "", note: "" });
+  const [sending, setSending] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const add = (i) => setCart((c) => ({ ...c, [i]: (c[i] || 0) + 1 }));
+  const sub = (i) => setCart((c) => { const n = { ...c }; n[i] = (n[i] || 0) - 1; if (n[i] <= 0) delete n[i]; return n; });
+  const items = Object.entries(cart).map(([i, qty]) => ({ ...products[i], qty }));
+  const total = items.reduce((s, it) => s + (parseFloat(it.price) || 0) * it.qty, 0);
+  const count = items.reduce((s, it) => s + it.qty, 0);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!onOrder) return;
+    setSending(true);
+    const ok = await onOrder({
+      customer_name: form.customer_name, phone: form.phone, address: form.address, note: form.note,
+      items: items.map((it) => ({ name: it.name, price: parseFloat(it.price) || 0, qty: it.qty })),
+      total, currency,
+    });
+    setSending(false);
+    if (ok) { setDone(true); setCart({}); setCheckout(false); }
+  };
+
+  return (
+    <SectionWrap className="bg-[#FAFAFA]">
+      <div className="max-w-6xl mx-auto">
+        {d.title && <h2 className="font-head text-3xl font-extrabold brand-text mb-8 text-center">{d.title}</h2>}
+        {done && <div className="mb-6 text-center p-4 rounded-xl bg-green-50 border border-green-200 text-green-700">تم استلام طلبك بنجاح، سنتواصل معك لتأكيده.</div>}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {products.map((p, i) => (
+            <div key={i} className="rounded-2xl bg-white border border-slate-200 overflow-hidden soft-shadow flex flex-col">
+              {p.image && <div className="aspect-video overflow-hidden"><img src={mediaUrl(p.image)} alt={p.name} className="w-full h-full object-cover" /></div>}
+              <div className="p-4 flex flex-col flex-1">
+                <h3 className="font-bold brand-text">{p.name}</h3>
+                {p.description && <p className="text-slate-500 text-sm mt-1 flex-1">{p.description}</p>}
+                <div className="flex items-center justify-between mt-3">
+                  <span className="font-extrabold brand-text">{p.price} {currency}</span>
+                  {cart[i] ? (
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => sub(i)} className="w-7 h-7 rounded-full bg-slate-100 grid place-items-center"><Minus className="w-4 h-4" /></button>
+                      <span className="font-bold w-5 text-center">{cart[i]}</span>
+                      <button onClick={() => add(i)} className="w-7 h-7 rounded-full brand-accent-bg text-white grid place-items-center"><Plus className="w-4 h-4" /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => add(i)} className="rounded-full brand-bg text-white px-4 py-1.5 text-sm font-semibold flex items-center gap-1"><ShoppingCart className="w-4 h-4" /> أضف</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {count > 0 && !checkout && (
+          <div className="sticky bottom-4 mt-8 mx-auto max-w-md bg-white rounded-2xl border border-slate-200 soft-shadow-lg p-4 flex items-center justify-between">
+            <div><span className="font-bold brand-text">{count} منتج</span><span className="text-slate-400 text-sm"> · الإجمالي {total.toFixed(2)} {currency}</span></div>
+            <Button onClick={() => setCheckout(true)} className="brand-accent-bg text-white rounded-full" data-testid="store-checkout-btn">إتمام الطلب</Button>
+          </div>
+        )}
+
+        {checkout && (
+          <form onSubmit={submit} className="mt-8 mx-auto max-w-md bg-white rounded-2xl border border-slate-200 soft-shadow p-6 space-y-3">
+            <div className="flex items-center justify-between"><h3 className="font-bold brand-text">إتمام الطلب</h3><button type="button" onClick={() => setCheckout(false)}><X className="w-5 h-5 text-slate-400" /></button></div>
+            <div className="space-y-1 text-sm text-slate-600 pb-2 border-b border-slate-100">
+              {items.map((it, x) => <div key={x} className="flex justify-between"><span>{it.name} ×{it.qty}</span><span>{((parseFloat(it.price) || 0) * it.qty).toFixed(2)}</span></div>)}
+              <div className="flex justify-between font-bold brand-text pt-1"><span>الإجمالي</span><span>{total.toFixed(2)} {currency}</span></div>
+            </div>
+            <input required placeholder="الاسم" value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-[var(--brand-accent)]" data-testid="store-name" />
+            <input required placeholder="رقم الجوال" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-[var(--brand-accent)]" data-testid="store-phone" />
+            <input placeholder="عنوان التوصيل" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-[var(--brand-accent)]" data-testid="store-address" />
+            <textarea placeholder="ملاحظات (اختياري)" rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-[var(--brand-accent)]" />
+            <p className="text-xs text-amber-600">الدفع عند الاستلام أو التحويل — الدفع الإلكتروني يُفعّل بعد ربط بوابة الدفع.</p>
+            <Button type="submit" disabled={sending || !onOrder} className="w-full brand-bg text-white rounded-full py-5" data-testid="store-submit-order">{sending ? "جارٍ الإرسال..." : "تأكيد الطلب"}</Button>
+          </form>
+        )}
+      </div>
+    </SectionWrap>
+  );
+}
+
+export default function SectionRenderer({ section, onContact, onOrder, settings }) {
   const d = section.data || {};
   switch (section.type) {
     case "hero": return <Hero d={d} />;
@@ -301,6 +403,8 @@ export default function SectionRenderer({ section, onContact, settings }) {
     case "gallery": return <Gallery d={d} />;
     case "image": return <ImageBlock d={d} />;
     case "products": return <Products d={d} />;
+    case "store": return <StoreBlock d={d} onOrder={onOrder} />;
+    case "logos": return <LogosBlock d={d} />;
     case "testimonials": return <Testimonials d={d} />;
     case "team": return <TeamBlock d={d} />;
     case "pricing": return <PricingBlock d={d} />;

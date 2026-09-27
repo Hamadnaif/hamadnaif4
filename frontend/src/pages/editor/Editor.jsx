@@ -8,16 +8,18 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowRight, Save, Rocket, Monitor, Smartphone, Plus, Trash2, ChevronUp, ChevronDown,
   Loader2, Image as ImageIcon, Sparkles, Palette, FileText, Layers, Eye, Home, Star,
-  Users, DollarSign, Megaphone,
+  Users, DollarSign, Megaphone, ShoppingBag,
 } from "lucide-react";
 
 const SECTION_TYPES = [
   { type: "hero", label: "صورة رئيسية", icon: ImageIcon },
   { type: "text", label: "نص", icon: FileText },
   { type: "services", label: "خدمات", icon: Layers },
+  { type: "store", label: "متجر ومنتجات", icon: ShoppingBag },
   { type: "gallery", label: "معرض صور", icon: ImageIcon },
   { type: "image", label: "صورة", icon: ImageIcon },
   { type: "products", label: "منتجات للعرض", icon: Layers },
+  { type: "logos", label: "شعارات عملاء", icon: ImageIcon },
   { type: "team", label: "فريق العمل", icon: Users },
   { type: "pricing", label: "جدول أسعار", icon: DollarSign },
   { type: "cta", label: "لافتة دعوة", icon: Megaphone },
@@ -41,6 +43,10 @@ function defaultSection(type) {
     team: { title: "فريق العمل", subtitle: "نخبة من المحترفين", members: [{ name: "اسم العضو", role: "المسمى الوظيفي", image: "" }] },
     pricing: { title: "باقات الأسعار", subtitle: "اختر ما يناسبك", plans: [{ name: "باقة", price: "99", period: "شهريًا", features: ["ميزة"], highlight: false }] },
     cta: { title: "جاهز للبدء؟", subtitle: "تواصل معنا اليوم.", button_text: "احجز الآن", button_link: "#contact" },
+    store: { title: "منتجاتنا", currency: "SAR", products: [{ name: "منتج", description: "وصف المنتج", price: "100", image: "" }] },
+    logos: { title: "شركاؤنا وعملاؤنا", logos: [] },
+    store: { title: "منتجاتنا", currency: "SAR", products: [{ name: "منتج", description: "وصف المنتج", price: "100", image: "" }] },
+    logos: { title: "شركاؤنا وعملاؤنا", logos: [] },
     testimonials: { title: "آراء العملاء", items: [{ name: "عميل", role: "", text: "رأي العميل" }] },
     faq: { title: "أسئلة شائعة", items: [{ q: "سؤال؟", a: "إجابة." }] },
     contact: { title: "تواصل معنا", subtitle: "سنسعد بالرد عليك", show_phone: true, show_email: true },
@@ -211,6 +217,42 @@ function SectionProperties({ section, onChange, siteName }) {
         <Field label="الوصف"><textarea value={d.subtitle || ""} onChange={(e) => set("subtitle", e.target.value)} className={inputCls} rows={2} /></Field>
         <Field label="نص الزر"><input value={d.button_text || ""} onChange={(e) => set("button_text", e.target.value)} className={inputCls} /></Field>
         <Field label="رابط الزر"><input value={d.button_link || ""} onChange={(e) => set("button_link", e.target.value)} className={inputCls} dir="ltr" /></Field>
+      </>);
+    case "store":
+      return (<>
+        <Field label="العنوان"><input value={d.title || ""} onChange={(e) => set("title", e.target.value)} className={inputCls} /></Field>
+        <Field label="العملة"><select value={d.currency || "SAR"} onChange={(e) => set("currency", e.target.value)} className={inputCls}><option value="SAR">ريال سعودي (SAR)</option><option value="AED">درهم (AED)</option><option value="KWD">دينار كويتي (KWD)</option><option value="QAR">ريال قطري (QAR)</option></select></Field>
+        <Field label="المنتجات"><ListEditor items={d.products || []} onChange={(v) => set("products", v)} addLabel="إضافة منتج" fields={[{ key: "name", label: "اسم المنتج" }, { key: "description", label: "الوصف", type: "textarea" }, { key: "price", label: "السعر" }, { key: "image", label: "صورة", type: "image" }]} /></Field>
+      </>);
+    case "logos":
+      return (<>
+        <Field label="العنوان"><input value={d.title || ""} onChange={(e) => set("title", e.target.value)} className={inputCls} /></Field>
+        <Field label="الشعارات">
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            {(d.logos || []).map((img, i) => (
+              <div key={i} className="relative"><img src={mediaUrl(img)} alt="" className="w-full h-16 object-contain rounded-lg border bg-white p-1" /><button onClick={() => set("logos", d.logos.filter((_, x) => x !== i))} className="absolute top-1 end-1 bg-red-500 text-white rounded-full w-5 h-5 grid place-items-center text-xs">×</button></div>
+            ))}
+          </div>
+          <ImageUpload onChange={(v) => v && set("logos", [...(d.logos || []), v])} testid="prop-logos-add" />
+        </Field>
+      </>);
+    case "store":
+      return (<>
+        <Field label="العنوان"><input value={d.title || ""} onChange={(e) => set("title", e.target.value)} className={inputCls} /></Field>
+        <Field label="العملة"><select value={d.currency || "SAR"} onChange={(e) => set("currency", e.target.value)} className={inputCls}><option value="SAR">ريال سعودي (SAR)</option><option value="AED">درهم (AED)</option><option value="KWD">دينار كويتي (KWD)</option><option value="QAR">ريال قطري (QAR)</option></select></Field>
+        <Field label="المنتجات"><ListEditor items={d.products || []} onChange={(v) => set("products", v)} addLabel="إضافة منتج" fields={[{ key: "name", label: "اسم المنتج" }, { key: "description", label: "الوصف", type: "textarea" }, { key: "price", label: "السعر" }, { key: "image", label: "صورة", type: "image" }]} /></Field>
+      </>);
+    case "logos":
+      return (<>
+        <Field label="العنوان"><input value={d.title || ""} onChange={(e) => set("title", e.target.value)} className={inputCls} /></Field>
+        <Field label="الشعارات">
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            {(d.logos || []).map((img, i) => (
+              <div key={i} className="relative"><img src={mediaUrl(img)} alt="" className="w-full h-16 object-contain rounded-lg border bg-white p-1" /><button onClick={() => set("logos", d.logos.filter((_, x) => x !== i))} className="absolute top-1 end-1 bg-red-500 text-white rounded-full w-5 h-5 grid place-items-center text-xs">×</button></div>
+            ))}
+          </div>
+          <ImageUpload onChange={(v) => v && set("logos", [...(d.logos || []), v])} testid="prop-logos-add" />
+        </Field>
       </>);
     case "faq":
       return (<>
