@@ -5,10 +5,11 @@ import { toast } from "sonner";
 import SectionRenderer from "@/components/SectionRenderer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   ArrowRight, Save, Rocket, Monitor, Smartphone, Plus, Trash2, ChevronUp, ChevronDown,
   Loader2, Image as ImageIcon, Sparkles, Palette, FileText, Layers, Eye, Home, Star,
-  Users, DollarSign, Megaphone, ShoppingBag,
+  Users, DollarSign, Megaphone, ShoppingBag, Images,
 } from "lucide-react";
 
 const SECTION_TYPES = [
@@ -61,6 +62,8 @@ function ImageUpload({ value, onChange, testid, kind = "image" }) {
   const [aiOpen, setAiOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [genLoading, setGenLoading] = useState(false);
+  const [libOpen, setLibOpen] = useState(false);
+  const [libItems, setLibItems] = useState(null);
   const inputRef = useRef();
   const upload = async (e) => {
     const file = e.target.files?.[0];
@@ -86,6 +89,17 @@ function ImageUpload({ value, onChange, testid, kind = "image" }) {
     } catch (err) { toast.error(apiError(err.response?.data?.detail)); }
     setGenLoading(false);
   };
+  const openLib = async () => {
+    setLibOpen(true);
+    if (libItems === null) {
+      try { const { data } = await api.get("/media"); setLibItems(data); } catch { setLibItems([]); }
+    }
+  };
+  const delItem = async (id, e) => {
+    e.stopPropagation();
+    try { await api.delete(`/media/${id}`); setLibItems((it) => it.filter((m) => m.id !== id)); }
+    catch { /* ignore */ }
+  };
   return (
     <div>
       <div className="flex items-center gap-2 flex-wrap">
@@ -96,6 +110,9 @@ function ImageUpload({ value, onChange, testid, kind = "image" }) {
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => setAiOpen((o) => !o)} className="rounded-lg brand-accent-text" data-testid={testid ? `${testid}-ai` : "img-ai"}>
           <Sparkles className="w-4 h-4 ms-1" /> {kind === "logo" ? "توليد شعار" : "توليد بالذكاء"}
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={openLib} className="rounded-lg" data-testid={testid ? `${testid}-lib` : "img-lib"}>
+          <Images className="w-4 h-4 ms-1" /> المكتبة
         </Button>
         {value && <button type="button" onClick={() => onChange("")} className="text-red-500 text-xs">إزالة</button>}
       </div>
@@ -109,6 +126,26 @@ function ImageUpload({ value, onChange, testid, kind = "image" }) {
           </Button>
         </div>
       )}
+      <Dialog open={libOpen} onOpenChange={setLibOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle className="font-head brand-text text-start">مكتبة الصور</DialogTitle></DialogHeader>
+          {libItems === null ? (
+            <div className="grid place-items-center py-10"><Loader2 className="w-6 h-6 animate-spin brand-accent-text" /></div>
+          ) : libItems.length === 0 ? (
+            <p className="text-center text-slate-400 py-10">لا توجد صور بعد. ارفع صورة أو ولّدها بالذكاء لتظهر هنا.</p>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+              {libItems.map((m) => (
+                <div key={m.id} className="relative group cursor-pointer" onClick={() => { onChange(m.url); setLibOpen(false); }} data-testid={`lib-item-${m.id}`}>
+                  <img src={mediaUrl(m.url)} alt="" className="w-full h-24 object-cover rounded-lg border border-slate-200 group-hover:ring-2 ring-[var(--brand-accent)]" />
+                  {m.source === "ai" && <span className="absolute top-1 start-1 bg-[var(--brand-accent)] text-white text-[10px] rounded px-1">AI</span>}
+                  <button onClick={(e) => delItem(m.id, e)} className="absolute top-1 end-1 bg-red-500 text-white rounded-full w-5 h-5 grid place-items-center text-xs opacity-0 group-hover:opacity-100">×</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

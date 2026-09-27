@@ -50,4 +50,13 @@ async def get_media(media_id: str):
 async def list_media(user: dict = Depends(get_current_user)):
     docs = await db.media.find({"owner_id": user["id"]}, {"data_b64": 0}).sort("created_at", -1).to_list(300)
     return [{"id": str(d["_id"]), "url": f"/api/media/{d['_id']}", "filename": d.get("filename"),
-             "size": d.get("size"), "content_type": d.get("content_type")} for d in docs]
+             "size": d.get("size"), "content_type": d.get("content_type"), "source": d.get("source", "upload")} for d in docs]
+
+
+@router.delete("/{media_id}")
+async def delete_media(media_id: str, user: dict = Depends(get_current_user)):
+    doc = await db.media.find_one({"_id": to_oid(media_id)})
+    if not doc or doc.get("owner_id") != user["id"]:
+        raise HTTPException(status_code=404, detail="الصورة غير موجودة")
+    await db.media.delete_one({"_id": to_oid(media_id)})
+    return {"ok": True}
