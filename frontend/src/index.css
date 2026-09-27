@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-primary: #0a2540;
+  --brand-secondary: #d4af37;
+  --brand-accent: #2563eb;
+}
+
+body {
+  margin: 0;
+  font-family: "Cairo", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #fafafa;
+  color: #0f172a;
+}
+
+h1, h2, h3, h4, h5, .font-head {
+  font-family: "Tajawal", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+::selection {
+  background: var(--brand-secondary);
+  color: #0a2540;
+}
+
+.brand-bg { background-color: var(--brand-primary); }
+.brand-text { color: var(--brand-primary); }
+.brand-accent-bg { background-color: var(--brand-accent); }
+.brand-accent-text { color: var(--brand-accent); }
+.gold-text { color: var(--brand-secondary); }
+
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.soft-shadow { box-shadow: 0 8px 30px rgb(0 0 0 / 0.06); }
+.soft-shadow-lg { box-shadow: 0 20px 60px rgb(10 37 64 / 0.12); }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 209 72% 15%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
+}
+
+@layer base {
+  [data-debug-wrapper="true"] { display: contents !important; }
+}

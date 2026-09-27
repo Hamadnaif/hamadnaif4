@@ -1,0 +1,109 @@
+{
+  "theme": "light",
+  "typography": {
+    "headings": {
+      "fontFamily": "Tajawal, sans-serif",
+      "weights": ["700", "900"],
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-tight",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight",
+      "h3": "text-xl sm:text-2xl",
+      "note": "Use Tajawal for a modern, geometric Arabic feel. Use tight tracking even for Arabic."
+    },
+    "body": {
+      "fontFamily": "Cairo, sans-serif",
+      "weights": ["400", "600"],
+      "base": "text-base leading-relaxed text-slate-700",
+      "small": "text-sm text-slate-500"
+    }
+  },
+  "colors": {
+    "archetype": "Swiss & High-Contrast (Adapted for Premium Gulf Market)",
+    "primary": "#0A2540",
+    "secondary": "#D4AF37",
+    "accent": "#2563EB",
+    "background": "#FAFAFA",
+    "surface": "#FFFFFF",
+    "border": "#E2E8F0",
+    "text_main": "#0F172A",
+    "text_muted": "#64748B",
+    "success": "#10B981",
+    "warning": "#F59E0B",
+    "error": "#EF4444",
+    "note": "Colors are customizable from admin, but this is the default premium theme."
+  },
+  "layouts": {
+    "marketing": {
+      "hero": "Asymmetric bento grid with an overlapping abstract graphic or laptop mockup. Use generous padding (py-24).",
+      "features": "Bento grid (grid-cols-1 md:grid-cols-12), wide gaps (gap-8), high visual tension.",
+      "templates_gallery": "Grid of cards with hover lift (-translate-y-2) and subtle shadow. Masonry or varied heights."
+    },
+    "dashboard": {
+      "container": "RTL-aware layout with sidebar on the RIGHT (in RTL mode, start is right).",
+      "sidebar": "w-64 fixed, bg-white border-e border-slate-200. Use logical classes like 'border-e'.",
+      "content": "Dense grid layout (gap-6) for data and metrics. Cardless or 1px border flat cards."
+    },
+    "editor": {
+      "layout": "Full height (h-screen) with a fixed right panel for components and left panel for settings/properties. Central iframe/canvas area.",
+      "canvas": "bg-slate-100 rounded-xl overflow-hidden shadow-inner my-4 mx-4 flex-1"
+    }
+  },
+  "visual_enhancers": {
+    "surfaces": "Use Glassmorphism for sticky headers (backdrop-blur-xl bg-white/70 border-b border-white/20). Dashboards use crisp 1px borders with subtle shadows.",
+    "borders": "1px solid border-slate-200 for structured elements.",
+    "shadows": "Hover states use layered soft ambient shadows (shadow-[0_8px_30px_rgb(0,0,0,0.04)])."
+  },
+  "motion": {
+    "hover": "Subtle transform (-translate-y-1) for template cards and buttons.",
+    "transitions": "transition-transform duration-200 ease-out, transition-colors duration-200. NEVER use 'transition-all'.",
+    "interactions": "Use framer-motion for smooth sidebar toggling and component drag-and-drop feedback."
+  },
+  "accessibility": {
+    "contrast": "Ensure text against #0A2540 is pure white. Use APCA contrast principles.",
+    "focus": "focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2",
+    "rtl": "CRITICAL: The entire application must be perfectly functional in RTL. Use HTML 'dir=rtl'. Use Tailwind logical properties (ps-, pe-, ms-, me-, text-start, text-end, border-s, border-e)."
+  },
+  "media": {
+    "hero_image": "https://images.unsplash.com/photo-1681505546695-682d6c1e2c3a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDB8MHwxfHNlYXJjaHwyfHxhcmFiJTIwYnVzaW5lc3NtYW4lMjB3b3JraW5nJTIwbGFwdG9wfGVufDB8fHx8MTc5MDUyOTIzN3ww&ixlib=rb-4.1.0&q=85",
+    "templates": [
+      "https://images.unsplash.com/photo-1634084462412-b54873c0a56d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwyfHxtaW5pbWFsaXN0JTIwd2Vic2l0ZSUyMHRlbXBsYXRlJTIwZGVzaWdufGVufDB8fHx8MTc5MDUyOTI0M3ww&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1760008486593-a85315610136?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHw0fHxtaW5pbWFsaXN0JTIwd2Vic2l0ZSUyMHRlbXBsYXRlJTIwZGVzaWdufGVufDB8fHx8MTc5MDUyOTI0M3ww&ixlib=rb-4.1.0&q=85"
+    ],
+    "logos": [
+      "https://images.unsplash.com/photo-1627843563095-f6e94676cfe0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHw0fHxjb21wYW55JTIwbG9nb3xlbnwwfHx8fDE3OTA1MjkyNTF8MA&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1662057168154-89300791ad6e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxjb21wYW55JTIwbG9nb3xlbnwwfHx8fDE3OTA1MjkyNTF8MA&ixlib=rb-4.1.0&q=85"
+    ]
+  },
+  "libraries": {
+    "icons": "lucide-react (use for simple icons), @phosphor-icons/react (for dashboard icons)",
+    "motion": "framer-motion",
+    "components": "shadcn/ui (heavily customized for RTL and brand colors)"
+  },
+  "instructions_to_main_agent": [
+    "CRITICAL: Add `<html dir=\"rtl\" lang=\"ar\">` in index.html to enable RTL support.",
+    "Add Google Fonts import for Tajawal and Cairo in index.css.",
+    "Use Tailwind logical properties STRICTLY. Use `ps-` instead of `pl-`, `me-` instead of `mr-`, `text-start` instead of `text-left`. This ensures the UI flips correctly.",
+    "Do NOT use HTML input type date. Use shadcn calendar.",
+    "Do NOT use transparent backgrounds for dropdowns, modals, or sticky headers. Always apply solid or blurred backgrounds.",
+    "For the website builder canvas, build a drag-and-drop or click-to-add interface using state to manage sections (Hero, Text, Features, Gallery, Services, Testimonials, FAQ, Contact, Footer).",
+    "Ensure all interactive elements have `data-testid` attributes (e.g., `data-testid=\"login-button\"`).",
+    "Do NOT use 'transition: all'. Explicitly state transitions (e.g., 'transition-colors transition-transform').",
+    "Build standard Marketing pages: Home, Templates, Pricing, Domain Search, Contact, etc.",
+    "Build User Dashboard: Site management, domains, subscription, invoices.",
+    "Build Platform Admin Dashboard: Stats, customers, plans, CMS settings."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight. Create depth through layered design elements with z-index hierarchy. Use glass-morphism effects with backdrop filters (12-24px blur). You MUST NOT apply universal transition (e.g., transition: all). Always use modern button styles like pill-shaped or sharp buttons. Every interaction needs micro-animations. Use 2-3x more spacing than feels comfortable. NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 for icons. Use sonner for toasts.",
+  "components_to_build": [
+    "Navbar (Sticky, Glassmorphism, RTL-aware)",
+    "HeroSection (Marketing)",
+    "TemplateGallery (Marketing)",
+    "PricingCards (Marketing)",
+    "DomainSearch (Marketing)",
+    "DashboardLayout (Sidebar right in RTL)",
+    "SitesList (Dashboard)",
+    "SubscriptionBilling (Dashboard)",
+    "BuilderWorkspace (Editor left/right panels, center canvas)",
+    "SectionEditor (Controls for Hero, Gallery, Text, etc.)",
+    "AdminStats (Admin Dashboard)",
+    "AdminSettings (Admin Dashboard)"
+  ]
+}
