@@ -205,7 +205,8 @@ _GROUPS = [
     ("عرض خدمات", "أعمال", SRV), ("شركة ناشئة", "أعمال", STA), ("مطعم وكافيه", "إبداعي", FOOD),
     ("متجر", "متاجر", ECO), ("عيادة طبية", "طبي", MED), ("عقارات", "عقارات", RE), ("نادي رياضي", "لياقة", GYM),
 ]
-_VARIANTS = ["الأنيق", "الحديث", "الكلاسيكي", "الجريء", "المبسّط"]
+_VARIANTS = ["الحديث", "الكلاسيكي"]
+_REMOVED_VARIANTS = ["الأنيق", "الجريء", "المبسّط"]
 _PALETTES = [
     {"primary": "#0A2540", "secondary": "#D4AF37", "accent": "#2563EB"},
     {"primary": "#111827", "secondary": "#F59E0B", "accent": "#EF4444"},
@@ -267,6 +268,10 @@ async def run_seed():
     if await db.plans.count_documents({}) == 0:
         for p in DEFAULT_PLANS:
             await db.plans.insert_one({**p, "created_at": _now()})
+
+    # remove stale templates for deprecated variants so they disappear from the catalog
+    if _REMOVED_VARIANTS:
+        await db.templates.delete_many({"name": {"$in": [f"{base} — {v}" for base, _cat, _imgs in _GROUPS for v in _REMOVED_VARIANTS]}})
 
     # upsert templates by name so improvements refresh existing ones and add new
     for t in _template_defs():
