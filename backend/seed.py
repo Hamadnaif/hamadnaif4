@@ -8,6 +8,23 @@ def _now():
     return datetime.now(timezone.utc).isoformat()
 
 
+def U(pid):
+    return f"https://images.unsplash.com/photo-{pid}?q=80&w=1600&auto=format&fit=crop"
+
+
+# distinct, category-relevant imagery
+BIZ = [U("1718220216044-006f43e3a9b1"), U("1559136555-9303baea8ebd"), U("1558959356-2f36c7322d3b"), U("1556761175-4b46a572b786")]
+POR = [U("1516131206008-dd041a9764fd"), U("1561070791-2526d30994b5"), U("1561070791-36c11767b26a"), U("1534670007418-fbb7f6cf32c3")]
+PER = [U("1560250097-0b93528c311a"), U("1494790108377-be9c29b29330"), U("1519085360753-af0119f7cbe7"), U("1676989880361-091e12efc056")]
+SRV = [U("1517245386807-bb43f82c33c4"), U("1688380692117-63178554d76d"), U("1542744173-8e7e53415bb0"), U("1517048676732-d65bc937f952")]
+STA = [U("1704440349159-e7f8a6db589f"), U("1778146476147-5f8d4bd03c79"), U("1596784326488-23581279e33d"), U("1702047048032-e734daa2473d")]
+FOOD = [U("1663530761401-15eefb544889"), U("1467003909585-2f8a72700288"), U("1514326640560-7d063ef2aed5"), U("1572715376701-98568319fd0b")]
+ECO = [U("1691096675075-de995918f3ce"), U("1691096674749-29069acd529c"), U("1691096674326-74cfe19c04cc"), U("1691096671143-d05c501339bc")]
+MED = [U("1638202993928-7267aad84c31"), U("1758691463582-11aea602cd4a"), U("1758691462878-6edc3d3da1be"), U("1612531386530-97286d97c2d2")]
+RE = [U("1505843795480-5cfb3c03f6ff"), U("1505843513577-22bb7d21e455"), U("1613490493576-7fde63acd811"), U("1613977257363-707ba9348227")]
+GYM = [U("1548690312-e3b507d8c110"), U("1641337221253-fdc7237f6b61"), U("1722925541142-5db2668ca492"), U("1576678927484-cc907957088c")]
+
+
 DEFAULT_SETTINGS = {
     "_key": "platform",
     "platform_name": "منصتي",
@@ -35,262 +52,188 @@ DEFAULT_SETTINGS = {
 
 
 DEFAULT_PLANS = [
-    {
-        "name": "البداية", "price_monthly": 29, "price_yearly": 290, "currency": "SAR",
-        "order": 1, "is_active": True,
-        "features": ["موقع واحد", "حتى 5 صفحات", "نطاق فرعي مجاني", "قوالب أساسية", "نموذج تواصل"],
-        "limits": {"sites": 1, "pages": 5, "storage_mb": 200, "custom_domain": False},
-        "highlight": False,
-    },
-    {
-        "name": "الاحترافية", "price_monthly": 79, "price_yearly": 790, "currency": "SAR",
-        "order": 2, "is_active": True,
-        "features": ["حتى 3 مواقع", "صفحات غير محدودة", "ربط نطاق خاص", "جميع القوالب", "إزالة شعار المنصة", "دعم أولوية"],
-        "limits": {"sites": 3, "pages": 100, "storage_mb": 2000, "custom_domain": True},
-        "highlight": True,
-    },
-    {
-        "name": "الأعمال", "price_monthly": 149, "price_yearly": 1490, "currency": "SAR",
-        "order": 3, "is_active": True,
-        "features": ["حتى 10 مواقع", "صفحات غير محدودة", "ربط نطاقات متعددة", "مساحة تخزين موسّعة", "دعم مخصص"],
-        "limits": {"sites": 10, "pages": 500, "storage_mb": 10000, "custom_domain": True},
-        "highlight": False,
-    },
+    {"name": "البداية", "price_monthly": 29, "price_yearly": 290, "currency": "SAR", "order": 1, "is_active": True,
+     "features": ["موقع واحد", "حتى 5 صفحات", "نطاق فرعي مجاني", "قوالب أساسية", "نموذج تواصل"],
+     "limits": {"sites": 1, "pages": 5, "storage_mb": 200, "custom_domain": False}, "highlight": False},
+    {"name": "الاحترافية", "price_monthly": 79, "price_yearly": 790, "currency": "SAR", "order": 2, "is_active": True,
+     "features": ["حتى 3 مواقع", "صفحات غير محدودة", "ربط نطاق خاص", "جميع القوالب", "إزالة شعار المنصة", "دعم أولوية"],
+     "limits": {"sites": 3, "pages": 100, "storage_mb": 2000, "custom_domain": True}, "highlight": True},
+    {"name": "الأعمال", "price_monthly": 149, "price_yearly": 1490, "currency": "SAR", "order": 3, "is_active": True,
+     "features": ["حتى 10 مواقع", "صفحات غير محدودة", "ربط نطاقات متعددة", "مساحة تخزين موسّعة", "دعم مخصص"],
+     "limits": {"sites": 10, "pages": 500, "storage_mb": 10000, "custom_domain": True}, "highlight": False},
 ]
 
 
-def _hero(title, subtitle, image):
-    return {"id": "sec_hero", "type": "hero", "data": {
-        "title": title, "subtitle": subtitle, "image": image,
-        "button_text": "تواصل معنا", "button_link": "#contact",
-        "align": "center"}}
+_c = 0
+def _sid(t):
+    global _c
+    _c += 1
+    return f"sec_{t}_{_c}"
 
 
-def _services(items):
-    return {"id": "sec_services", "type": "services", "data": {
-        "title": "خدماتنا", "subtitle": "ما نقدّمه لك",
-        "items": [{"title": t, "description": d, "icon": "sparkles"} for t, d in items]}}
+def _hero(title, subtitle, image, btn="تواصل معنا"):
+    return {"id": _sid("hero"), "type": "hero", "data": {"title": title, "subtitle": subtitle, "image": image, "button_text": btn, "button_link": "#contact", "align": "center"}}
 
+def _services(title, items):
+    return {"id": _sid("services"), "type": "services", "data": {"title": title, "subtitle": "ما نقدّمه لك", "items": [{"title": t, "description": d, "icon": "sparkles"} for t, d in items]}}
 
 def _text(title, body):
-    return {"id": "sec_text_" + str(abs(hash(title)) % 9999), "type": "text",
-            "data": {"title": title, "body": body, "align": "start"}}
+    return {"id": _sid("text"), "type": "text", "data": {"title": title, "body": body, "align": "start"}}
 
-
-def _gallery(images):
-    return {"id": "sec_gallery", "type": "gallery", "data": {
-        "title": "معرض الأعمال", "images": images}}
-
+def _gallery(title, images):
+    return {"id": _sid("gallery"), "type": "gallery", "data": {"title": title, "images": images}}
 
 def _testimonials():
-    return {"id": "sec_testimonials", "type": "testimonials", "data": {
-        "title": "آراء العملاء",
-        "items": [
-            {"name": "عميل سعيد", "role": "صاحب مشروع", "text": "تجربة ممتازة وسهلة، أنجزت موقعي بسرعة."},
-            {"name": "عميلة", "role": "مصممة", "text": "القوالب أنيقة والدعم متعاون. أنصح بها."},
-        ]}}
-
+    return {"id": _sid("testi"), "type": "testimonials", "data": {"title": "آراء العملاء", "items": [
+        {"name": "عميل سعيد", "role": "صاحب مشروع", "text": "تجربة ممتازة وسهلة، أنجزت موقعي بسرعة."},
+        {"name": "عميلة", "role": "مصممة", "text": "احترافية عالية ودعم متعاون. أنصح بها بشدّة."}]}}
 
 def _faq():
-    return {"id": "sec_faq", "type": "faq", "data": {
-        "title": "الأسئلة الشائعة",
-        "items": [
-            {"q": "كيف أبدأ؟", "a": "اختر قالبًا وابدأ التعديل مباشرة من لوحة التحكم."},
-            {"q": "هل يمكنني ربط نطاقي؟", "a": "نعم، تدعم المنصة ربط نطاق خاص في الباقات المناسبة."},
-        ]}}
-
+    return {"id": _sid("faq"), "type": "faq", "data": {"title": "الأسئلة الشائعة", "items": [
+        {"q": "كيف أبدأ؟", "a": "اختر قالبًا وابدأ التعديل مباشرة من لوحة التحكم."},
+        {"q": "هل يمكنني ربط نطاقي؟", "a": "نعم، تدعم المنصة ربط نطاق خاص في الباقات المناسبة."}]}}
 
 def _contact():
-    return {"id": "sec_contact", "type": "contact", "data": {
-        "title": "تواصل معنا", "subtitle": "سنسعد بالرد على استفساراتك",
-        "show_phone": True, "show_email": True}}
-
+    return {"id": _sid("contact"), "type": "contact", "data": {"title": "تواصل معنا", "subtitle": "سنسعد بالرد على استفساراتك", "show_phone": True, "show_email": True}}
 
 def _footer(name):
-    return {"id": "sec_footer", "type": "footer", "data": {
-        "text": f"© {name} - جميع الحقوق محفوظة", "links": []}}
+    return {"id": _sid("footer"), "type": "footer", "data": {"text": f"© {name} - جميع الحقوق محفوظة", "links": []}}
 
-
-def _team():
-    return {"id": "sec_team", "type": "team", "data": {
-        "title": "فريق العمل", "subtitle": "نخبة من المحترفين",
-        "members": [
-            {"name": "اسم العضو", "role": "المسمى الوظيفي", "image": ""},
-            {"name": "اسم العضو", "role": "المسمى الوظيفي", "image": ""},
-            {"name": "اسم العضو", "role": "المسمى الوظيفي", "image": ""},
-        ]}}
-
+def _team(imgs):
+    return {"id": _sid("team"), "type": "team", "data": {"title": "فريق العمل", "subtitle": "نخبة من المحترفين",
+            "members": [{"name": "اسم العضو", "role": "المسمى الوظيفي", "image": i} for i in imgs[:3]]}}
 
 def _pricing():
-    return {"id": "sec_pricing", "type": "pricing", "data": {
-        "title": "باقات الأسعار", "subtitle": "اختر ما يناسبك",
-        "plans": [
-            {"name": "أساسي", "price": "99", "period": "شهريًا", "features": ["ميزة أولى", "ميزة ثانية", "ميزة ثالثة"], "highlight": False},
-            {"name": "احترافي", "price": "199", "period": "شهريًا", "features": ["كل ما سبق", "ميزة إضافية", "دعم أولوية"], "highlight": True},
-            {"name": "متقدم", "price": "349", "period": "شهريًا", "features": ["كل المزايا", "مدير حساب", "تقارير مخصصة"], "highlight": False},
-        ]}}
-
+    return {"id": _sid("pricing"), "type": "pricing", "data": {"title": "باقات الأسعار", "subtitle": "اختر ما يناسبك", "plans": [
+        {"name": "أساسي", "price": "99", "period": "شهريًا", "features": ["ميزة أولى", "ميزة ثانية", "ميزة ثالثة"], "highlight": False},
+        {"name": "احترافي", "price": "199", "period": "شهريًا", "features": ["كل ما سبق", "ميزة إضافية", "دعم أولوية"], "highlight": True},
+        {"name": "متقدم", "price": "349", "period": "شهريًا", "features": ["كل المزايا", "مدير حساب", "تقارير مخصصة"], "highlight": False}]}}
 
 def _cta():
-    return {"id": "sec_cta", "type": "cta", "data": {
-        "title": "جاهز للبدء؟", "subtitle": "تواصل معنا اليوم واحصل على استشارة مجانية.",
-        "button_text": "احجز الآن", "button_link": "#contact"}}
+    return {"id": _sid("cta"), "type": "cta", "data": {"title": "جاهز للبدء؟", "subtitle": "تواصل معنا اليوم واحصل على استشارة مجانية.", "button_text": "احجز الآن", "button_link": "#contact"}}
 
-
-def _store():
-    return {"id": "sec_store", "type": "store", "data": {
-        "title": "منتجاتنا", "currency": "SAR",
-        "products": [
-            {"name": "منتج أول", "description": "وصف مختصر للمنتج", "price": "120", "image": IMG},
-            {"name": "منتج ثاني", "description": "وصف مختصر للمنتج", "price": "90", "image": IMG2},
-            {"name": "منتج ثالث", "description": "وصف مختصر للمنتج", "price": "150", "image": IMG3},
-        ]}}
-
+def _store(imgs, currency="SAR"):
+    return {"id": _sid("store"), "type": "store", "data": {"title": "منتجاتنا", "currency": currency, "products": [
+        {"name": "منتج مميّز", "description": "وصف مختصر للمنتج", "price": "120", "image": imgs[0]},
+        {"name": "منتج رائج", "description": "وصف مختصر للمنتج", "price": "90", "image": imgs[1]},
+        {"name": "منتج جديد", "description": "وصف مختصر للمنتج", "price": "150", "image": imgs[2]}]}}
 
 def _logos():
-    return {"id": "sec_logos", "type": "logos", "data": {
-        "title": "شركاؤنا وعملاؤنا", "logos": []}}
+    return {"id": _sid("logos"), "type": "logos", "data": {"title": "شركاؤنا وعملاؤنا", "logos": []}}
 
 
-IMG = "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1600&auto=format&fit=crop"
-IMG2 = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1600&auto=format&fit=crop"
-IMG3 = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1600&auto=format&fit=crop"
+def _tpl(name, category, desc, thumb, colors, font, sections):
+    return {"name": name, "category": category, "description": desc, "thumbnail": thumb, "is_active": True,
+            "config": {"brand": {"colors": colors, "font": font},
+                       "pages": [{"id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
+                                  "seo": {"title": name, "description": desc, "image": thumb}, "sections": sections}]}}
 
 
 def _template_defs():
     return [
-        {
-            "name": "نشاط تجاري", "category": "أعمال",
-            "description": "موقع تعريفي احترافي لنشاطك التجاري مع أقسام للخدمات والتواصل.",
-            "thumbnail": IMG, "is_active": True,
-            "config": {
-                "brand": {"colors": {"primary": "#0A2540", "secondary": "#D4AF37", "accent": "#2563EB"}, "font": "Tajawal"},
-                "pages": [{
-                    "id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
-                    "seo": {"title": "نشاطي التجاري", "description": "نقدّم خدمات احترافية تلبّي احتياجاتك.", "image": ""},
-                    "sections": [
-                        _hero("اسم نشاطك التجاري", "نقدّم لك حلولًا احترافية تناسب احتياجاتك بجودة عالية.", IMG),
-                        _services([("خدمة أولى", "وصف موجز للخدمة الأولى التي تقدّمها."),
-                                   ("خدمة ثانية", "وصف موجز للخدمة الثانية التي تقدّمها."),
-                                   ("خدمة ثالثة", "وصف موجز للخدمة الثالثة التي تقدّمها.")]),
-                        _testimonials(), _faq(), _contact(), _footer("نشاطي التجاري"),
-                    ],
-                }],
-            },
-        },
-        {
-            "name": "معرض أعمال", "category": "إبداعي",
-            "description": "اعرض أعمالك ومشاريعك بشكل بصري جذّاب في معرض أنيق.",
-            "thumbnail": IMG2, "is_active": True,
-            "config": {
-                "brand": {"colors": {"primary": "#111827", "secondary": "#F59E0B", "accent": "#EF4444"}, "font": "Cairo"},
-                "pages": [{
-                    "id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
-                    "seo": {"title": "معرض أعمالي", "description": "مجموعة مختارة من أعمالي ومشاريعي.", "image": ""},
-                    "sections": [
-                        _hero("معرض أعمالي", "مجموعة مختارة من مشاريعي التي أفخر بها.", IMG2),
-                        _gallery([IMG, IMG2, IMG3, IMG, IMG2, IMG3]),
-                        _text("عني", "نبذة عن خبرتي ومجال عملي وأسلوبي في تنفيذ المشاريع."),
-                        _contact(), _footer("معرض أعمالي"),
-                    ],
-                }],
-            },
-        },
-        {
-            "name": "صفحة شخصية", "category": "شخصي",
-            "description": "صفحة تعريفية شخصية تبرز سيرتك ومهاراتك ووسائل التواصل معك.",
-            "thumbnail": IMG3, "is_active": True,
-            "config": {
-                "brand": {"colors": {"primary": "#1E3A8A", "secondary": "#10B981", "accent": "#6366F1"}, "font": "Tajawal"},
-                "pages": [{
-                    "id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
-                    "seo": {"title": "صفحتي الشخصية", "description": "تعرّف عليّ وعلى مهاراتي.", "image": ""},
-                    "sections": [
-                        _hero("مرحبًا، أنا الاسم", "نبذة قصيرة تعرّف بك وبمجال تخصصك.", IMG3),
-                        _text("نبذة عني", "اكتب هنا نبذة عن نفسك، خبراتك، واهتماماتك المهنية."),
-                        _services([("مهارة", "وصف المهارة الأولى."), ("مهارة", "وصف المهارة الثانية.")]),
-                        _contact(), _footer("صفحتي الشخصية"),
-                    ],
-                }],
-            },
-        },
-        {
-            "name": "عرض خدمات", "category": "أعمال",
-            "description": "صفحة هبوط لعرض خدماتك وباقاتك ودفع العملاء لاتخاذ إجراء.",
-            "thumbnail": IMG, "is_active": True,
-            "config": {
-                "brand": {"colors": {"primary": "#0F766E", "secondary": "#F59E0B", "accent": "#0EA5E9"}, "font": "Cairo"},
-                "pages": [{
-                    "id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
-                    "seo": {"title": "خدماتنا", "description": "باقات وخدمات مصمّمة لتلبية احتياجك.", "image": ""},
-                    "sections": [
-                        _hero("خدمات تصنع الفرق", "حلول مرنة تناسب مشروعك مهما كان حجمه.", IMG),
-                        _services([("استشارة", "جلسة استشارية لتحديد احتياجك."),
-                                   ("تنفيذ", "تنفيذ احترافي وسريع."),
-                                   ("دعم", "دعم متواصل بعد التسليم.")]),
-                        _faq(), _testimonials(), _contact(), _footer("خدماتنا"),
-                    ],
-                }],
-            },
-        },
-        {
-            "name": "شركة ناشئة", "category": "أعمال",
-            "description": "صفحة هبوط لشركة ناشئة مع باقات أسعار وفريق عمل ودعوة لإجراء.",
-            "thumbnail": IMG2, "is_active": True,
-            "config": {
-                "brand": {"colors": {"primary": "#4338CA", "secondary": "#F59E0B", "accent": "#06B6D4"}, "font": "Tajawal"},
-                "pages": [{
-                    "id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
-                    "seo": {"title": "شركتنا الناشئة", "description": "حلول مبتكرة لمشروعك.", "image": ""},
-                    "sections": [
-                        _hero("نطوّر أفكارك إلى منتجات", "منصة متكاملة تساعد شركتك على النمو بسرعة.", IMG2),
-                        _services([("سرعة", "إطلاق أسرع لمنتجك."), ("مرونة", "حلول قابلة للتوسّع."), ("دعم", "فريق يساندك دائمًا.")]),
-                        _pricing(), _team(), _cta(), _footer("شركتنا الناشئة"),
-                    ],
-                }],
-            },
-        },
-        {
-            "name": "مطعم وكافيه", "category": "إبداعي",
-            "description": "موقع أنيق لمطعم أو كافيه مع معرض للأطباق ونموذج حجز/تواصل وخريطة.",
-            "thumbnail": IMG3, "is_active": True,
-            "config": {
-                "brand": {"colors": {"primary": "#7C2D12", "secondary": "#D97706", "accent": "#B45309"}, "font": "Cairo"},
-                "pages": [{
-                    "id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
-                    "seo": {"title": "مطعمنا", "description": "نكهات تجمع الأصالة والإبداع.", "image": ""},
-                    "sections": [
-                        _hero("نكهة لا تُنسى", "أطباق شهية تُحضّر بحب من أجود المكوّنات.", IMG3),
-                        _gallery([IMG, IMG2, IMG3, IMG, IMG2, IMG3]),
-                        _text("قصتنا", "نبذة عن مطعمنا ورسالتنا في تقديم أفضل تجربة طعام لضيوفنا."),
-                        _testimonials(), _contact(),
-                        {"id": "sec_map", "type": "map", "data": {"title": "موقعنا", "address": "Riyadh"}},
-                        _footer("مطعمنا"),
-                    ],
-                }],
-            },
-        },
-        {
-            "name": "متجر إلكتروني", "category": "متاجر",
-            "description": "متجر إلكتروني بسلة شراء وطلبات فعلية، يناسب بيع المنتجات مباشرة للعملاء.",
-            "thumbnail": IMG, "is_active": True,
-            "config": {
-                "brand": {"colors": {"primary": "#0F172A", "secondary": "#F59E0B", "accent": "#10B981"}, "font": "Tajawal"},
-                "pages": [{
-                    "id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
-                    "seo": {"title": "متجرنا", "description": "تسوّق أفضل المنتجات بأسعار مميزة.", "image": ""},
-                    "sections": [
-                        _hero("تسوّق الأفضل", "منتجات مختارة بعناية تصلك أينما كنت.", IMG),
-                        _store(), _logos(), _contact(), _footer("متجرنا"),
-                    ],
-                }],
-            },
-        },
-    ]
+        _tpl("نشاط تجاري", "أعمال", "موقع تعريفي احترافي لنشاطك التجاري مع خدمات وآراء عملاء وتواصل.", BIZ[0],
+             {"primary": "#0A2540", "secondary": "#D4AF37", "accent": "#2563EB"}, "Tajawal",
+             [_hero("اسم نشاطك التجاري", "نقدّم لك حلولًا احترافية تناسب احتياجاتك بجودة عالية.", BIZ[0]),
+              _services("خدماتنا", [("خدمة أولى", "وصف موجز للخدمة الأولى."), ("خدمة ثانية", "وصف موجز للخدمة الثانية."), ("خدمة ثالثة", "وصف موجز للخدمة الثالثة.")]),
+              _text("عن الشركة", "نبذة تعريفية عن شركتك ورؤيتها وقيمها وما يميّزها عن غيرها في السوق."),
+              _testimonials(), _faq(), _contact(), _footer("نشاطي التجاري")]),
+
+        _tpl("معرض أعمال", "إبداعي", "اعرض مشاريعك وأعمالك في معرض بصري أنيق يبرز إبداعك.", POR[0],
+             {"primary": "#111827", "secondary": "#F59E0B", "accent": "#EF4444"}, "Cairo",
+             [_hero("معرض أعمالي", "مجموعة مختارة من مشاريعي التي أفخر بها.", POR[0]),
+              _gallery("أحدث الأعمال", POR + BIZ[:2]),
+              _text("عني", "نبذة عن خبرتي ومجال عملي وأسلوبي في تنفيذ المشاريع."),
+              _testimonials(), _contact(), _footer("معرض أعمالي")]),
+
+        _tpl("صفحة شخصية", "شخصي", "صفحة تعريفية شخصية تبرز سيرتك ومهاراتك ووسائل التواصل معك.", PER[0],
+             {"primary": "#1E3A8A", "secondary": "#10B981", "accent": "#6366F1"}, "Tajawal",
+             [_hero("مرحبًا، أنا الاسم", "نبذة قصيرة تعرّف بك وبمجال تخصصك.", PER[0]),
+              _text("نبذة عني", "اكتب هنا نبذة عن نفسك، خبراتك، واهتماماتك المهنية."),
+              _services("مهاراتي", [("مهارة", "وصف المهارة الأولى."), ("مهارة", "وصف المهارة الثانية."), ("مهارة", "وصف المهارة الثالثة.")]),
+              _contact(), _footer("صفحتي الشخصية")]),
+
+        _tpl("عرض خدمات", "أعمال", "صفحة هبوط لعرض خدماتك ودفع العملاء لاتخاذ إجراء.", SRV[0],
+             {"primary": "#0F766E", "secondary": "#F59E0B", "accent": "#0EA5E9"}, "Cairo",
+             [_hero("خدمات تصنع الفرق", "حلول مرنة تناسب مشروعك مهما كان حجمه.", SRV[0]),
+              _services("خدماتنا", [("استشارة", "جلسة استشارية لتحديد احتياجك."), ("تنفيذ", "تنفيذ احترافي وسريع."), ("دعم", "دعم متواصل بعد التسليم.")]),
+              _cta(), _faq(), _contact(), _footer("خدماتنا")]),
+
+        _tpl("شركة ناشئة", "أعمال", "صفحة هبوط لشركة ناشئة مع باقات أسعار وفريق عمل ودعوة لإجراء.", STA[0],
+             {"primary": "#4338CA", "secondary": "#F59E0B", "accent": "#06B6D4"}, "Tajawal",
+             [_hero("نطوّر أفكارك إلى منتجات", "منصة متكاملة تساعد شركتك على النمو بسرعة.", STA[0]),
+              _services("لماذا نحن", [("سرعة", "إطلاق أسرع لمنتجك."), ("مرونة", "حلول قابلة للتوسّع."), ("دعم", "فريق يساندك دائمًا.")]),
+              _pricing(), _team(PER), _cta(), _footer("شركتنا الناشئة")]),
+
+        _tpl("مطعم وكافيه", "إبداعي", "موقع أنيق لمطعم أو كافيه مع معرض للأطباق وخريطة وتواصل.", FOOD[0],
+             {"primary": "#7C2D12", "secondary": "#D97706", "accent": "#B45309"}, "Cairo",
+             [_hero("نكهة لا تُنسى", "أطباق شهية تُحضّر بحب من أجود المكوّنات.", FOOD[0]),
+              _gallery("قائمتنا", FOOD),
+              _text("قصتنا", "نبذة عن مطعمنا ورسالتنا في تقديم أفضل تجربة طعام لضيوفنا."),
+              _testimonials(), _contact(),
+              {"id": _sid("map"), "type": "map", "data": {"title": "موقعنا", "address": "Riyadh"}},
+              _footer("مطعمنا")]),
+
+        _tpl("متجر إلكتروني", "متاجر", "متجر إلكتروني بسلة شراء وطلبات فعلية لبيع المنتجات مباشرة.", ECO[0],
+             {"primary": "#0F172A", "secondary": "#F59E0B", "accent": "#10B981"}, "Tajawal",
+             [_hero("تسوّق الأفضل", "منتجات مختارة بعناية تصلك أينما كنت.", ECO[0]),
+              _store(ECO), _logos(), _contact(), _footer("متجرنا")]),
+
+        _tpl("عيادة طبية", "طبي", "موقع لعيادة أو مركز طبي مع الخدمات والأطباء وحجز التواصل.", MED[0],
+             {"primary": "#0E7490", "secondary": "#10B981", "accent": "#0284C7"}, "Tajawal",
+             [_hero("رعاية صحية تثق بها", "فريق طبي متخصص وأحدث التقنيات في خدمتك.", MED[0], btn="احجز موعدًا"),
+              _services("خدماتنا الطبية", [("استشارات", "استشارات طبية دقيقة."), ("فحوصات", "فحوصات شاملة ومتقدمة."), ("متابعة", "متابعة دورية لحالتك.")]),
+              _team(MED), _faq(), _contact(), _footer("عيادتنا")]),
+
+        _tpl("عقارات", "عقارات", "موقع لعرض العقارات والمشاريع السكنية مع معرض وتواصل مباشر.", RE[3],
+             {"primary": "#1C1917", "secondary": "#CA8A04", "accent": "#0D9488"}, "Cairo",
+             [_hero("عقارك القادم يبدأ هنا", "مجموعة مختارة من أرقى العقارات والمشاريع.", RE[3], btn="استفسر الآن"),
+              _gallery("أحدث العروض", RE),
+              _services("خدماتنا", [("بيع", "تسويق وبيع عقارك بأفضل سعر."), ("إيجار", "إدارة وتأجير الوحدات."), ("استشارة", "استشارات عقارية موثوقة.")]),
+              _contact(), _footer("شركة العقارات")]),
+
+        _tpl("نادي رياضي", "لياقة", "موقع لنادٍ رياضي أو مدرب مع البرامج والاشتراكات ودعوة للانضمام.", GYM[3],
+             {"primary": "#18181B", "secondary": "#EAB308", "accent": "#DC2626"}, "Cairo",
+             [_hero("ابدأ رحلتك نحو لياقتك", "برامج تدريبية مصممة لتحقيق أهدافك.", GYM[3], btn="اشترك الآن"),
+              _services("برامجنا", [("لياقة عامة", "برامج للمبتدئين والمحترفين."), ("تدريب شخصي", "مدرب خاص يرافقك."), ("تغذية", "خطط تغذية متكاملة.")]),
+              _gallery("من النادي", GYM),
+              _pricing(), _cta(), _footer("النادي الرياضي")]),
+    ] + _more_templates()
+
+
+_GROUPS = [
+    ("نشاط تجاري", "أعمال", BIZ), ("معرض أعمال", "إبداعي", POR), ("صفحة شخصية", "شخصي", PER),
+    ("عرض خدمات", "أعمال", SRV), ("شركة ناشئة", "أعمال", STA), ("مطعم وكافيه", "إبداعي", FOOD),
+    ("متجر", "متاجر", ECO), ("عيادة طبية", "طبي", MED), ("عقارات", "عقارات", RE), ("نادي رياضي", "لياقة", GYM),
+]
+_VARIANTS = ["الأنيق", "الحديث", "الكلاسيكي", "الجريء", "المبسّط"]
+_PALETTES = [
+    {"primary": "#0A2540", "secondary": "#D4AF37", "accent": "#2563EB"},
+    {"primary": "#111827", "secondary": "#F59E0B", "accent": "#EF4444"},
+    {"primary": "#0F766E", "secondary": "#F59E0B", "accent": "#0EA5E9"},
+    {"primary": "#4338CA", "secondary": "#22D3EE", "accent": "#06B6D4"},
+    {"primary": "#7C2D12", "secondary": "#D97706", "accent": "#B45309"},
+    {"primary": "#1C1917", "secondary": "#CA8A04", "accent": "#0D9488"},
+]
+
+
+def _more_templates():
+    out = []
+    for gi, (base, cat, imgs) in enumerate(_GROUPS):
+        for i, v in enumerate(_VARIANTS):
+            colors = _PALETTES[(gi + i) % len(_PALETTES)]
+            font = "Tajawal" if (gi + i) % 2 == 0 else "Cairo"
+            thumb = imgs[i % len(imgs)]
+            secs = [
+                _hero(f"{base} {v}", "قالب احترافي جاهز قابل للتخصيص بالكامل من ألوان ونصوص وصور.", thumb),
+                _services("مميزاتنا", [("ميزة أولى", "وصف موجز."), ("ميزة ثانية", "وصف موجز."), ("ميزة ثالثة", "وصف موجز.")]),
+                _gallery("معرض", imgs),
+                _testimonials(), _contact(), _footer(base),
+            ]
+            out.append(_tpl(f"{base} — {v}", cat, f"قالب {base} بأسلوب {v}، جاهز وقابل للتخصيص الكامل.", thumb, colors, font, secs))
+    return out
 
 
 async def run_seed():
-    # indexes
     await db.users.create_index("email", unique=True)
     try:
         await db.password_reset_tokens.create_index("token", unique=True)
@@ -301,7 +244,6 @@ async def run_seed():
     await db.sites.create_index("owner_id")
     await db.user_sessions.create_index("session_token")
 
-    # admin
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@example.com")
     admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
     existing = await db.users.find_one({"email": admin_email})
@@ -311,8 +253,7 @@ async def run_seed():
             "password_hash": hash_password(admin_password), "role": "admin",
             "auth_provider": "password", "picture": None,
             "plan_id": None, "plan_cycle": None, "subscription_status": "none",
-            "subscription_renews_at": None, "account_status": "active",
-            "created_at": _now(),
+            "subscription_renews_at": None, "account_status": "active", "created_at": _now(),
         })
     else:
         updates = {"role": "admin"}
@@ -320,17 +261,14 @@ async def run_seed():
             updates["password_hash"] = hash_password(admin_password)
         await db.users.update_one({"email": admin_email}, {"$set": updates})
 
-    # settings
     if not await db.settings.find_one({"_key": "platform"}):
         await db.settings.insert_one(dict(DEFAULT_SETTINGS))
 
-    # plans
     if await db.plans.count_documents({}) == 0:
         for p in DEFAULT_PLANS:
             await db.plans.insert_one({**p, "created_at": _now()})
 
-    # templates (insert any missing by name so new templates are added on redeploy)
-    existing_names = set(await db.templates.distinct("name"))
+    # upsert templates by name so improvements refresh existing ones and add new
     for t in _template_defs():
-        if t["name"] not in existing_names:
-            await db.templates.insert_one({**t, "created_at": _now()})
+        await db.templates.update_one({"name": t["name"]},
+                                      {"$set": t, "$setOnInsert": {"created_at": _now()}}, upsert=True)

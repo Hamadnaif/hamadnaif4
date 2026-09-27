@@ -24,6 +24,21 @@ export default function Sites() {
   const [newSite, setNewSite] = useState({ name: "", template_id: "" });
   const [saving, setSaving] = useState(false);
   const [toDelete, setToDelete] = useState(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const createWithAI = async () => {
+    if (!aiPrompt.trim()) { toast.error("صف نشاطك أولًا"); return; }
+    setAiLoading(true);
+    try {
+      const gen = await api.post("/ai/generate-template", { prompt: aiPrompt });
+      const { data } = await api.post("/sites/from-ai", { name: gen.data.name, config: gen.data.config });
+      toast.success("تم إنشاء الموقع بالذكاء الاصطناعي");
+      setCreating(false); setAiPrompt("");
+      navigate(`/editor/${data.id}`);
+    } catch (err) { toast.error(apiError(err.response?.data?.detail)); }
+    setAiLoading(false);
+  };
 
   const load = async () => {
     try { const { data } = await api.get("/sites"); setSites(data); } catch { setSites([]); }
@@ -108,6 +123,17 @@ export default function Sites() {
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle className="font-head text-2xl brand-text text-start">إنشاء موقع جديد</DialogTitle></DialogHeader>
+          <div className="rounded-xl border-2 border-[var(--brand-accent)] bg-blue-50/50 p-4 mb-2">
+            <label className="text-sm font-bold brand-text mb-1 block">✨ أنشئ موقعًا بالذكاء الاصطناعي</label>
+            <p className="text-xs text-slate-500 mb-2">صِف نشاطك وسننشئ لك موقعًا كاملًا بالمحتوى العربي فورًا.</p>
+            <div className="flex gap-2">
+              <input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="مثال: مقهى مختص بالقهوة في الرياض" className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[var(--brand-accent)]" data-testid="ai-template-prompt" />
+              <Button onClick={createWithAI} disabled={aiLoading} className="brand-accent-bg text-white rounded-xl" data-testid="ai-template-generate">
+                {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "توليد"}
+              </Button>
+            </div>
+          </div>
+          <div className="text-center text-xs text-slate-400 my-1">أو اختر قالبًا جاهزًا</div>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-semibold text-slate-600 mb-1 block">اسم الموقع</label>

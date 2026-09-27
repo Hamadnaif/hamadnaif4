@@ -30,7 +30,7 @@ async def public_plans():
 
 @router.get("/templates")
 async def public_templates():
-    docs = await db.templates.find({"is_active": True}).sort("created_at", 1).to_list(50)
+    docs = await db.templates.find({"is_active": True}).sort("created_at", 1).to_list(300)
     return [serialize(d) for d in docs]
 
 

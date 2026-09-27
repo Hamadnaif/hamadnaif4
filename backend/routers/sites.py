@@ -107,6 +107,31 @@ async def create_site(body: CreateSiteBody, user: dict = Depends(get_current_use
     return serialize(doc)
 
 
+class AISiteBody(BaseModel):
+    name: str
+    config: dict
+
+
+@router.post("/from-ai")
+async def create_site_from_ai(body: AISiteBody, user: dict = Depends(get_current_user)):
+    limits = await _get_plan_limits(user)
+    count = await db.sites.count_documents({"owner_id": user["id"]})
+    if count >= limits.get("sites", 1):
+        raise HTTPException(status_code=403, detail="وصلت للحد الأقصى من المواقع في باقتك. قم بالترقية.")
+    config = body.config or {}
+    subdomain = await _unique_subdomain(body.name)
+    doc = {
+        "owner_id": user["id"], "name": body.name.strip(), "template_id": None, "template_name": "بالذكاء الاصطناعي",
+        "subdomain": subdomain, "custom_domain": None, "custom_domain_status": None, "custom_domain_records": None,
+        "status": "draft",
+        "brand": config.get("brand", {"colors": {"primary": "#0A2540", "secondary": "#D4AF37", "accent": "#2563EB"}, "font": "Tajawal", "logo": None}),
+        "pages": config.get("pages", []), "published_at": None, "created_at": _now(), "updated_at": _now(),
+    }
+    res = await db.sites.insert_one(doc)
+    doc["_id"] = res.inserted_id
+    return serialize(doc)
+
+
 @router.get("/{site_id}")
 async def get_site(site_id: str, user: dict = Depends(get_current_user)):
     return serialize(await _owned_site(site_id, user))

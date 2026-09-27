@@ -7,8 +7,9 @@ ENV = os.environ.get("RESELLERCLUB_ENV", "test")
 BASE = "https://httpapi.com/api" if ENV == "live" else "https://test.httpapi.com/api"
 
 # indicative SAR prices until provider price API is wired
-PRICES = {"com": 45, "net": 55, "org": 50, "store": 90, "online": 70, "sa": 120, "com.sa": 140}
-SUPPORTED_TLDS = ["com", "net", "org", "store", "online"]
+PRICES = {"com": 45, "net": 55, "org": 50, "store": 90, "online": 70, "sa": 120,
+          "com.sa": 140, "shop": 95, "site": 75, "io": 180, "co": 140, "me": 120}
+SUPPORTED_TLDS = ["com", "net", "org", "sa", "com.sa", "store", "online", "shop", "site", "io", "co", "me"]
 
 
 def is_configured() -> bool:
