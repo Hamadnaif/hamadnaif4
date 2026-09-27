@@ -201,6 +201,10 @@ async def get_settings(admin: dict = Depends(require_admin)):
 async def update_settings(body: dict, admin: dict = Depends(require_admin)):
     body.pop("_key", None)
     body.pop("_id", None)
+    # deep-merge the integrations sub-doc so a partial write never clobbers other flags
+    if isinstance(body.get("integrations"), dict):
+        current = await db.settings.find_one({"_key": "platform"}) or {}
+        body["integrations"] = {**current.get("integrations", {}), **body["integrations"]}
     await db.settings.update_one({"_key": "platform"}, {"$set": body}, upsert=True)
     await _audit(admin, "update_settings", "platform")
     return await db.settings.find_one({"_key": "platform"}, {"_id": 0})

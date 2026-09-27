@@ -56,8 +56,11 @@ function defaultSection(type) {
   return { ...base, data: D[type] || {} };
 }
 
-function ImageUpload({ value, onChange, testid }) {
+function ImageUpload({ value, onChange, testid, kind = "image" }) {
   const [uploading, setUploading] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [prompt, setPrompt] = useState("");
+  const [genLoading, setGenLoading] = useState(false);
   const inputRef = useRef();
   const upload = async (e) => {
     const file = e.target.files?.[0];
@@ -72,14 +75,40 @@ function ImageUpload({ value, onChange, testid }) {
     } catch (err) { toast.error(apiError(err.response?.data?.detail)); }
     setUploading(false);
   };
+  const generate = async () => {
+    if (!prompt.trim()) { toast.error("أدخل وصفًا"); return; }
+    setGenLoading(true);
+    try {
+      const { data } = await api.post("/ai/generate-image", { prompt, kind });
+      onChange(data.url);
+      toast.success(kind === "logo" ? "تم توليد الشعار" : "تم توليد الصورة");
+      setAiOpen(false); setPrompt("");
+    } catch (err) { toast.error(apiError(err.response?.data?.detail)); }
+    setGenLoading(false);
+  };
   return (
-    <div className="flex items-center gap-2">
-      {value && <img src={mediaUrl(value)} alt="" className="w-12 h-12 rounded-lg object-cover border" />}
-      <input ref={inputRef} type="file" accept="image/*" onChange={upload} className="hidden" data-testid={testid} />
-      <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading} className="rounded-lg">
-        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ImageIcon className="w-4 h-4 ms-1" /> {value ? "تغيير" : "رفع صورة"}</>}
-      </Button>
-      {value && <button type="button" onClick={() => onChange("")} className="text-red-500 text-xs">إزالة</button>}
+    <div>
+      <div className="flex items-center gap-2 flex-wrap">
+        {value && <img src={mediaUrl(value)} alt="" className="w-12 h-12 rounded-lg object-cover border" />}
+        <input ref={inputRef} type="file" accept="image/*" onChange={upload} className="hidden" data-testid={testid} />
+        <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading} className="rounded-lg">
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ImageIcon className="w-4 h-4 ms-1" /> {value ? "تغيير" : "رفع"}</>}
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setAiOpen((o) => !o)} className="rounded-lg brand-accent-text" data-testid={testid ? `${testid}-ai` : "img-ai"}>
+          <Sparkles className="w-4 h-4 ms-1" /> {kind === "logo" ? "توليد شعار" : "توليد بالذكاء"}
+        </Button>
+        {value && <button type="button" onClick={() => onChange("")} className="text-red-500 text-xs">إزالة</button>}
+      </div>
+      {aiOpen && (
+        <div className="mt-2 flex gap-2">
+          <input value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && generate()}
+            placeholder={kind === "logo" ? "مثال: شعار لمقهى مختص بالقهوة" : "صف الصورة المطلوبة..."}
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[var(--brand-accent)]" data-testid={testid ? `${testid}-ai-prompt` : "img-ai-prompt"} />
+          <Button type="button" size="sm" onClick={generate} disabled={genLoading} className="brand-bg text-white rounded-lg" data-testid={testid ? `${testid}-ai-generate` : "img-ai-generate"}>
+            {genLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "توليد"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -439,7 +468,7 @@ export default function Editor() {
 
             <TabsContent value="design" className="flex-1 overflow-y-auto px-3 pb-4 mt-0">
               <h3 className="font-bold brand-text mb-3 flex items-center gap-2"><Palette className="w-4 h-4" /> هوية الموقع</h3>
-              <Field label="الشعار"><ImageUpload value={site.brand?.logo} onChange={(v) => setBrand("logo", v)} testid="brand-logo" /></Field>
+              <Field label="الشعار"><ImageUpload value={site.brand?.logo} onChange={(v) => setBrand("logo", v)} testid="brand-logo" kind="logo" /></Field>
               <Field label="اللون الأساسي"><input type="color" value={site.brand?.colors?.primary || "#0A2540"} onChange={(e) => setBrandColor("primary", e.target.value)} className="w-full h-10 rounded-lg border" data-testid="brand-primary" /></Field>
               <Field label="اللون الثانوي"><input type="color" value={site.brand?.colors?.secondary || "#D4AF37"} onChange={(e) => setBrandColor("secondary", e.target.value)} className="w-full h-10 rounded-lg border" /></Field>
               <Field label="لون التمييز"><input type="color" value={site.brand?.colors?.accent || "#2563EB"} onChange={(e) => setBrandColor("accent", e.target.value)} className="w-full h-10 rounded-lg border" /></Field>

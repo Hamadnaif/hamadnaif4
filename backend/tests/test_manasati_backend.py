@@ -376,6 +376,80 @@ class TestAdmin:
         assert isinstance(r.json(), list)
 
 
+# ---------- Store orders (Phase-3) ----------
+class TestStoreOrders:
+    def test_templates_include_store(self):
+        r = requests.get(f"{API}/public/templates")
+        assert r.status_code == 200
+        data = r.json()
+        assert len(data) >= 7, f"Expected >=7 templates, got {len(data)}"
+        names = {t["name"] for t in data}
+        assert "متجر إلكتروني" in names, f"missing store template, names={names}"
+
+    def test_store_template_has_store_section(self):
+        r = requests.get(f"{API}/public/templates")
+        store_tpl = next(t for t in r.json() if t["name"] == "متجر إلكتروني")
+        types = {s["type"] for p in store_tpl["config"]["pages"] for s in p["sections"]}
+        assert "store" in types, f"store template missing store section, got {types}"
+        assert "logos" in types, f"store template missing logos section, got {types}"
+
+    def test_store_order_flow_and_isolation(self, customer_session, customer_session_2, created_site):
+        # created_site already published in TestSites.test_publish_and_public_render (session scope)
+        subdomain = created_site["subdomain"]
+        # Post an order (public, no auth)
+        order_body = {
+            "customer_name": "TEST_Buyer",
+            "phone": "0501234567",
+            "address": "TEST street 5, Riyadh",
+            "items": [
+                {"name": "منتج 1", "price": 50.0, "qty": 2},
+                {"name": "منتج 2", "price": 25.0, "qty": 1},
+            ],
+            "total": 125.0, "currency": "SAR",
+        }
+        r = requests.post(f"{API}/public/site/{subdomain}/order", json=order_body)
+        assert r.status_code == 200, f"order failed: {r.status_code} {r.text}"
+        data = r.json()
+        assert data["ok"] is True
+        assert data.get("order_id"), "order_id missing in response"
+        order_id = data["order_id"]
+
+        # Owner sees it
+        r2 = customer_session.get(f"{API}/account/store-orders")
+        assert r2.status_code == 200, r2.text
+        orders = r2.json()
+        assert isinstance(orders, list)
+        found = [o for o in orders if o.get("id") == order_id]
+        assert found, f"owner does not see order {order_id} in list"
+        o = found[0]
+        assert o["customer_name"] == "TEST_Buyer"
+        assert o["phone"] == "0501234567"
+        assert abs(o["total"] - 125.0) < 0.001
+        assert len(o["items"]) == 2
+        assert "_id" not in o, "raw _id must not leak"
+
+        # Data isolation: second customer must NOT see this order
+        r3 = customer_session_2.get(f"{API}/account/store-orders")
+        assert r3.status_code == 200
+        ids2 = {o.get("id") for o in r3.json()}
+        assert order_id not in ids2, "data leak: other customer sees owner's order"
+
+    def test_store_order_empty_cart_rejected(self, created_site):
+        r = requests.post(f"{API}/public/site/{created_site['subdomain']}/order",
+                          json={"customer_name": "x", "phone": "0500", "items": [], "total": 0})
+        assert r.status_code == 400
+
+    def test_store_order_unpublished_site_404(self):
+        r = requests.post(f"{API}/public/site/nonexistent-sub-zzz/order",
+                          json={"customer_name": "x", "phone": "0500",
+                                "items": [{"name": "a", "price": 1, "qty": 1}], "total": 1})
+        assert r.status_code == 404
+
+    def test_store_orders_requires_auth(self):
+        r = requests.get(f"{API}/account/store-orders")
+        assert r.status_code == 401
+
+
 # ---------- Disabled integrations ----------
 class TestDisabledIntegrations:
     def test_subscribe_payment_disabled(self, customer_session):
