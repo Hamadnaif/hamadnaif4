@@ -27,6 +27,8 @@ import Billing from "@/pages/dashboard/Billing";
 import Domains from "@/pages/dashboard/Domains";
 import StoreOrders from "@/pages/dashboard/StoreOrders";
 import Profile from "@/pages/dashboard/Profile";
+import Checkout from "@/pages/dashboard/Checkout";
+import PaymentResult from "@/pages/dashboard/PaymentResult";
 import Editor from "@/pages/editor/Editor";
 
 import AdminLayout from "@/pages/admin/AdminLayout";
@@ -74,6 +76,8 @@ function AppRouter() {
           <Route path="/dashboard/profile" element={<Profile />} />
         </Route>
         <Route path="/editor/:siteId" element={<Editor />} />
+        <Route path="/checkout/:orderId" element={<Checkout />} />
+        <Route path="/payment/result" element={<PaymentResult />} />
       </Route>
 
       <Route element={<ProtectedRoute adminOnly />}>

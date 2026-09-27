@@ -13,6 +13,7 @@ from routers.public import router as public_router
 from routers.admin import router as admin_router
 from routers.account import router as account_router
 from routers.ai import router as ai_router
+from routers.payments import router as payments_router
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -44,6 +45,7 @@ api.include_router(public_router)
 api.include_router(admin_router)
 api.include_router(account_router)
 api.include_router(ai_router)
+api.include_router(payments_router)
 
 app.include_router(api)
 

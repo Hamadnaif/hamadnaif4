@@ -148,12 +148,17 @@ async def domain_search(q: str):
     tlds = domain_provider.SUPPORTED_TLDS
     prices = domain_provider.PRICES
     availability = {}
+    pricing = {}
     enabled = domain_provider.is_configured()
     message = None
 
     if enabled:
         try:
             availability = await domain_provider.check_availability(q, tlds)
+            try:
+                pricing = await domain_provider.get_pricing(tlds)
+            except Exception:
+                pricing = {}
         except Exception:
             enabled = False
             message = ("تعذّر الاتصال بمزوّد النطاقات. تأكد من إدراج عنوان IP الخاص بالخادم في القائمة "
@@ -172,8 +177,8 @@ async def domain_search(q: str):
     results = [{
         "domain": f"{q}.{t}",
         "tld": t,
-        "price": prices.get(t),
-        "renew_price": prices.get(t),
+        "price": (pricing.get(t, {}).get("register") if pricing.get(t) else prices.get(t)),
+        "renew_price": (pricing.get(t, {}).get("renew") if pricing.get(t) else prices.get(t)),
         "currency": "SAR",
         "available": availability.get(t) if enabled else None,
     } for t in tlds]

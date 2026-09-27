@@ -23,6 +23,29 @@ def config_status() -> dict:
     }
 
 
+async def get_pricing(tlds=None) -> dict:
+    """Return reseller customer pricing per tld: {tld: {"register": float, "renew": float}}."""
+    tlds = tlds or SUPPORTED_TLDS
+    params = {"auth-userid": RESELLER_ID, "api-key": API_KEY}
+    async with httpx.AsyncClient(timeout=25) as client:
+        resp = await client.get(f"{BASE}/products/customer-price.json", params=params)
+    resp.raise_for_status()
+    data = resp.json()
+    out = {}
+    for t in tlds:
+        entry = data.get(f"dom{t}") or data.get(t) or {}
+        try:
+            add = entry.get("addnewdomain", {})
+            renew = entry.get("renewdomain", {})
+            reg = float(next(iter(add.values()))) if add else None
+            ren = float(next(iter(renew.values()))) if renew else None
+            if reg is not None:
+                out[t] = {"register": reg, "renew": ren or reg}
+        except Exception:
+            continue
+    return out
+
+
 async def check_availability(sld: str, tlds=None) -> dict:
     """Return {tld: available_bool} using ResellerClub domains/available.json."""
     tlds = tlds or SUPPORTED_TLDS

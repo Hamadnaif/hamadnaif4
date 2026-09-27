@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -7,6 +8,7 @@ import { CheckCircle2, Loader2, CreditCard, Info } from "lucide-react";
 
 export default function Billing() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [overview, setOverview] = useState(null);
   const [plans, setPlans] = useState([]);
   const [cycle, setCycle] = useState("monthly");
@@ -24,8 +26,11 @@ export default function Billing() {
     setSubscribing(planId);
     try {
       const { data } = await api.post("/account/subscribe", { plan_id: planId, cycle });
-      if (!data.payment_enabled) toast.info(data.message, { duration: 6000 });
-      else toast.success(data.message);
+      if (data.payment_enabled && data.order?.id) {
+        navigate(`/checkout/${data.order.id}`);
+        return;
+      }
+      toast.info(data.message, { duration: 6000 });
     } catch (err) { toast.error(apiError(err.response?.data?.detail)); }
     setSubscribing("");
   };

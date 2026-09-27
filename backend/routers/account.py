@@ -1,9 +1,11 @@
-from datetime import datetime, timezone
+import os
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from db import db, serialize, to_oid
 from auth import get_current_user
+import moyasar_service
 
 router = APIRouter(prefix="/account", tags=["account"])
 
@@ -48,9 +50,6 @@ async def subscribe(body: SubscribeBody, user: dict = Depends(get_current_user))
     plan = await db.plans.find_one({"_id": to_oid(body.plan_id)})
     if not plan:
         raise HTTPException(status_code=404, detail="الباقة غير موجودة")
-    settings = await db.settings.find_one({"_key": "platform"})
-    pay_enabled = bool(settings and settings.get("integrations", {}).get("moyasar_enabled"))
-    # Record a pending order regardless (idempotency handled by unique ref elsewhere)
     price = plan.get("price_yearly") if body.cycle == "yearly" else plan.get("price_monthly")
     order = {
         "owner_id": user["id"], "type": "subscription", "plan_id": body.plan_id,
@@ -58,9 +57,30 @@ async def subscribe(body: SubscribeBody, user: dict = Depends(get_current_user))
         "currency": plan.get("currency", "SAR"),
         "status": "pending_payment", "created_at": _now(),
     }
-    await db.orders.insert_one(order)
-    if not pay_enabled:
+    res = await db.orders.insert_one(order)
+    order["_id"] = res.inserted_id
+    if not moyasar_service.is_configured():
         return {"payment_enabled": False,
                 "message": "بوابة الدفع (Moyasar) غير مربوطة بعد. لتفعيل الاشتراك الحقيقي يلزم إضافة مفاتيح التاجر. تم تسجيل الطلب كمسودة.",
                 "order": serialize(order)}
-    return {"payment_enabled": True, "message": "التوجيه لبوابة الدفع", "order": serialize(order)}
+    return {"payment_enabled": True, "order": serialize(order)}
+
+
+@router.get("/payment-session/{order_id}")
+async def payment_session(order_id: str, user: dict = Depends(get_current_user)):
+    if not moyasar_service.is_configured():
+        raise HTTPException(status_code=503, detail="بوابة الدفع غير مفعّلة")
+    order = await db.orders.find_one({"_id": to_oid(order_id)})
+    if not order or order["owner_id"] != user["id"]:
+        raise HTTPException(status_code=404, detail="الطلب غير موجود")
+    if order.get("status") == "paid":
+        raise HTTPException(status_code=409, detail="تم دفع هذا الطلب مسبقًا")
+    frontend = os.environ.get("FRONTEND_URL", "").rstrip("/")
+    return {
+        "order_ref": order_id,
+        "amount": int(round(float(order["amount"]) * 100)),  # halalas
+        "currency": order.get("currency", "SAR"),
+        "publishable_key": moyasar_service.PUBLISHABLE,
+        "callback_url": f"{frontend}/payment/result",
+        "description": f"اشتراك باقة {order.get('plan_name')} ({order.get('cycle')})",
+    }
