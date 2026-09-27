@@ -1,0 +1,32 @@
+{
+  "summary": "Phase-1 Manasati (منصتي) full-stack testing complete. Backend: 31/31 pytest tests PASSED (auth register/login/me/logout, marketing public endpoints, sites CRUD + publish + public render + site-contact, plan limits, admin RBAC on all /api/admin/* routes, admin CRUD for customers/templates/plans/settings, audit log, contacts routing, data isolation between customers, payment_enabled=false on subscribe, domain reseller enabled=false with disabled-notice message). Frontend: register→dashboard→create site (all 4 templates in modal)→editor (add-section, save, publish)→dashboard shows published status with subdomain→public /s/{subdomain} renders all sections and contact form submission works and shows success→admin login lands on /admin→all 6 admin sub-routes load without errors and admin/contacts shows the submitted messages. The previously reported compile bug 'Cannot find module @/components/layout/PublicLayout' is FIXED — file exists at /app/frontend/src/components/layout/PublicLayout.jsx and every page loads without any pageerror/console error other than expected 401 on /api/auth/me for unauthenticated visits.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_manasati_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend brute-force lockout uses per-IP+email identifier which is good, but does not clear lockout after 15 min unless lockout expires naturally (locked_until check works, but the record still has count>=5). Consider resetting count after unlock window to avoid immediate re-lock on next failure.",
+    "auth.py get_current_user returns 403 for suspended users which is fine, but /auth/refresh does not honor suspension (a suspended user could still refresh access_token). Consider checking account_status in /refresh as well.",
+    "routers/sites.py: _get_plan_limits defaults to {sites:1, pages:5, custom_domain:false} when user has no plan — this is intended free tier but is not surfaced anywhere in the API; consider adding /account/limits endpoint so the frontend can render 'reached your limit' messages proactively instead of only on 403.",
+    "public/domain/search hardcodes prices in the router — fine for phase 1 but should be moved to settings or a config collection once ResellerClub is enabled.",
+    "public/site/{subdomain} strips owner_id but still returns internal ids (page/section ids). That's OK for a builder but note that leaking template_id may allow scraping which template each site uses; consider dropping in the public payload.",
+    "sites.py update_site does not enforce plan limit `sites` (only pages). OK because sites count only checked on create.",
+    "No CSRF protection on state-changing endpoints beyond cookie SameSite=None — since JWT is httpOnly+SameSite=None+secure and CORS is restricted to the platform origin with allow_credentials, cross-site fetch is blocked, but any XSS on the platform origin would allow silent state changes. Consider CSRF double-submit or SameSite=Lax where possible.",
+    "Frontend /api/auth/me is called on every page load producing a 401 for unauth users — cosmetic console noise; consider a 200-with-null shape or suppressing the error log."
+  ],
+  "updated_files": ["/app/backend/tests/test_manasati_backend.py"],
+  "success_rate": { "backend": "100% (31/31)", "frontend": "100% of tested flows" },
+  "test_credentials": "Admin: hamad6668@gmail.com / Manasati@2026. Customer: freshly registered TEST_ui_*@example.com / pass1234 during test run.",
+  "seed_data_creation": "Created customer TEST_ui_33057fe5@example.com with site 'TEST My Site' (subdomain test-my-site-uabr, published) + submitted 1 public-site contact and 2 platform contacts. Plus multiple TEST_* users from pytest.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend test file at /app/backend/tests/test_manasati_backend.py covers all Phase-1 flows. When run with pytest-xdist parallel mode there is one flaky test (TestAdmin::test_contacts_list_includes_submissions) that depends on ordering with contact-submission tests running first. Sequential run (pytest -p no:xdist -o addopts=\"\") is 31/31. The admin default settings has no explicit `platform_name` key by default in the seeded settings collection — test_update_settings_platform_name adds it and public/settings reflects the change. Data-testids are excellent everywhere; use them.",
+  "rca of the issue": "No live issues. The previously reported '@/components/layout/PublicLayout not found' compile error is resolved — file present at /app/frontend/src/components/layout/PublicLayout.jsx and app compiles + all routes render."
+}

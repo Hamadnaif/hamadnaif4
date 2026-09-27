@@ -246,6 +246,8 @@ async def refresh(request: Request, response: Response):
         user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
         if not user:
             raise HTTPException(status_code=401, detail="غير مصرح")
+        if user.get("account_status") == "suspended":
+            raise HTTPException(status_code=403, detail="تم إيقاف الحساب")
         response.set_cookie("access_token", create_access_token(str(user["_id"]), user["email"]),
                             httponly=True, secure=True, samesite="none", max_age=3600, path="/")
         return {"ok": True}
