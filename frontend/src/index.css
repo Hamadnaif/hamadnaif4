@@ -3,9 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --brand-primary: #0a2540;
-  --brand-secondary: #d4af37;
+  --brand-primary: #071d32;
+  --brand-secondary: #2563eb;
   --brand-accent: #2563eb;
+  --platform-surface: #f4f7fc;
 }
 
 body {
@@ -27,8 +28,8 @@ code {
 }
 
 ::selection {
-  background: var(--brand-secondary);
-  color: #0a2540;
+  background: var(--brand-accent);
+  color: #ffffff;
 }
 
 /* ---- brand utility classes (kept for backward compatibility) ---- */
@@ -105,7 +106,7 @@ code {
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 209 72% 15%;
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 98%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
@@ -129,4 +130,47 @@ code {
 
 @layer base {
   [data-debug-wrapper="true"] { display: contents !important; }
+}
+
+
+/* Platform identity: customer palettes remain scoped by TemplateTheme/site wrappers. */
+.platform-ui {
+  background: var(--platform-surface);
+  color: var(--brand-primary);
+  font-family: "Tajawal", "Cairo", sans-serif;
+}
+.platform-ui :is(h1, h2, h3, h4, h5, .font-head) { font-family: inherit; }
+.platform-ui :is(a, button):focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 4px; }
+.brand-lockup { display: inline-flex; flex-direction: column; gap: 5px; vertical-align: middle; }
+.brand-logo-image { width: 145px; height: auto; max-height: 52px; object-fit: contain; }
+.brand-lockup > span { font-size: 12px; font-weight: 700; text-align: center; }
+.brand-custom-on-dark { background: #fff; border-radius: 8px; padding: 5px; }
+.identity-dark { background-color: var(--brand-primary); }
+.identity-dark .gold-text { color: #a9c6ff; }
+.identity-action { box-shadow: 0 6px 16px rgb(37 99 235 / 18%); transition: transform .2s ease, background-color .2s ease, box-shadow .2s ease; }
+.identity-action:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgb(37 99 235 / 24%); }
+.identity-action:active { transform: translateY(0); }
+.identity-hero { background: var(--platform-surface); overflow: hidden; }
+.hero-underline { position: absolute; inset-inline: 0; bottom: 0; height: 7px; border-bottom: 2px solid var(--brand-accent); border-radius: 50%; opacity: .4; transform: rotate(-3deg); }
+.hero-studio { position: relative; margin: 0 14px; border: 1px solid #fff; border-radius: 26px; background: #eaf1ff; padding: 0 18px 18px; box-shadow: 0 24px 64px rgb(7 29 50 / 9%), 0 0 0 10px rgb(255 255 255 / 45%); }
+.studio-topline { display: flex; justify-content: space-between; align-items: center; height: 54px; color: #536981; font-size: 12px; font-weight: 700; border-bottom: 1px solid #dce6f7; }
+.studio-dots { display: flex; gap: 5px; }
+.studio-dots i { width: 5px; height: 5px; border-radius: 50%; background: #9eb8e6; }
+.studio-art { display: block; width: 100%; height: auto; border-radius: 16px; mix-blend-mode: multiply; }
+.studio-tag { position: absolute; display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #fff; color: #071d32; font-size: 12px; font-weight: 700; border: 1px solid #e3ebf8; border-radius: 12px; box-shadow: 0 8px 20px rgb(7 29 50 / 6%); }
+.studio-tag-top { top: 85px; inset-inline-end: -30px; transform: rotate(-4deg); }
+.studio-tag-bottom { bottom: 92px; inset-inline-start: -28px; transform: rotate(3deg); }
+.studio-cursor { position: absolute; bottom: 37px; inset-inline-end: 30px; display: flex; flex-direction: column; align-items: end; gap: 4px; color: var(--brand-accent); }
+.studio-cursor span { color: white; background: var(--brand-accent); border-radius: 6px; padding: 5px 10px; font-size: 10px; font-weight: 700; }
+.studio-caption { font-size: 11px; color: #536981; text-align: start; padding-top: 9px; }
+@media (max-width: 640px) {
+  .brand-logo-image { width: 128px; }
+  .hero-studio { max-width: 420px; margin: 5px 14px 15px; padding-inline: 12px; }
+  .studio-tag { font-size: 10px; padding: 9px 11px; }
+  .studio-tag-top { inset-inline-end: -15px; }
+  .studio-tag-bottom { inset-inline-start: -15px; bottom: 82px; }
+  .studio-caption { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .platform-ui *, .platform-ui *::before, .platform-ui *::after { animation: none !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }

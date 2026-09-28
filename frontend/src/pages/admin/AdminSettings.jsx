@@ -47,11 +47,11 @@ export default function AdminSettings() {
         <TabsContent value="identity">
           <div className="bg-white rounded-2xl border border-slate-200 soft-shadow p-6 max-w-xl">
             <Field label="اسم المنصة"><input value={s.platform_name || ""} onChange={(e) => set("platform_name", e.target.value)} className={inputCls} data-testid="settings-platform-name" /></Field>
-            <Field label="رابط الشعار (اختياري)"><input value={s.logo_url || ""} onChange={(e) => set("logo_url", e.target.value)} className={inputCls} dir="ltr" /></Field>
+            <Field label="رابط الشعار"><input value={s.logo_url || ""} onChange={(e) => set("logo_url", e.target.value)} className={inputCls} dir="ltr" data-testid="settings-logo-url" /></Field>
             <div className="grid grid-cols-3 gap-3">
-              <Field label="أساسي"><input type="color" value={s.colors?.primary || "#0A2540"} onChange={(e) => setColor("primary", e.target.value)} className="w-full h-10 rounded-lg border" data-testid="settings-color-primary" /></Field>
-              <Field label="ثانوي"><input type="color" value={s.colors?.secondary || "#D4AF37"} onChange={(e) => setColor("secondary", e.target.value)} className="w-full h-10 rounded-lg border" /></Field>
-              <Field label="تمييز"><input type="color" value={s.colors?.accent || "#2563EB"} onChange={(e) => setColor("accent", e.target.value)} className="w-full h-10 rounded-lg border" /></Field>
+              <Field label="أساسي"><input type="color" value={s.colors?.primary || "#071D32"} onChange={(e) => setColor("primary", e.target.value)} className="w-full h-10 rounded-lg border" data-testid="settings-color-primary" /></Field>
+              <Field label="ثانوي"><input type="color" value={s.colors?.secondary || "#2563EB"} onChange={(e) => setColor("secondary", e.target.value)} className="w-full h-10 rounded-lg border" data-testid="settings-color-secondary" /></Field>
+              <Field label="تمييز"><input type="color" value={s.colors?.accent || "#2563EB"} onChange={(e) => setColor("accent", e.target.value)} className="w-full h-10 rounded-lg border" data-testid="settings-color-accent" /></Field>
             </div>
             <Field label="نطاق المنصة"><input value={s.platform_domain || ""} onChange={(e) => set("platform_domain", e.target.value)} className={inputCls} dir="ltr" /></Field>
           </div>

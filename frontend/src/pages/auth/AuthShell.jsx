@@ -1,31 +1,25 @@
 import { Link } from "react-router-dom";
 import { useBrand } from "@/context/BrandContext";
-import { Sparkles } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function AuthShell({ title, subtitle, children, footer }) {
   const { settings } = useBrand();
   return (
-    <div className="min-h-screen grid lg:grid-cols-2" data-testid="auth-shell">
-      <div className="hidden lg:flex flex-col justify-between brand-bg text-white p-12 relative overflow-hidden">
-        <div className="absolute -top-24 -start-24 w-96 h-96 rounded-full" style={{ background: "radial-gradient(circle, rgba(212,175,55,0.3), transparent 70%)" }} />
-        <Link to="/" className="flex items-center gap-2 relative">
-          <span className="w-9 h-9 rounded-xl bg-white/10 grid place-items-center"><Sparkles className="w-5 h-5 gold-text" /></span>
-          <span className="font-head font-extrabold text-2xl">{settings.platform_name}</span>
-        </Link>
-        <div className="relative">
-          <h2 className="font-head text-4xl font-extrabold leading-tight mb-4">ابنِ حضورك الرقمي<br /><span className="gold-text">باحترافية عربية</span></h2>
-          <p className="text-white/80 text-lg max-w-md">قوالب جاهزة، محرّر بسيط، ونشر فوري — كل ما تحتاجه لإطلاق موقعك.</p>
+    <div className="platform-ui min-h-screen grid lg:grid-cols-2" data-testid="auth-shell">
+      <div className="hidden lg:flex flex-col justify-between identity-dark text-white p-12 xl:p-16 relative overflow-hidden">
+        <Link to="/" className="relative self-start" data-testid="auth-desktop-home"><BrandLogo light testId="auth-desktop-brand" /></Link>
+        <div className="relative py-12">
+          <img src="/brand/mark-light.webp" alt="" className="w-36 h-36 object-contain mb-10" />
+          <p className="font-head text-4xl xl:text-5xl font-extrabold leading-[1.4] mb-5" data-testid="auth-brand-tagline">فكرتك تبدأ<br /><span className="text-blue-300">بموقع</span></p>
+          <p className="text-white/75 text-base max-w-md leading-relaxed">ابدأ بفكرتك. أضف لمستك. واصنع حضورًا يعبّر عنك بأدوات عربية بسيطة.</p>
         </div>
-        <p className="text-white/50 text-sm relative">© {new Date().getFullYear()} {settings.platform_name}</p>
+        <p className="text-white/60 text-sm relative">© {new Date().getFullYear()} {settings.platform_name}</p>
       </div>
-      <div className="flex items-center justify-center p-6 sm:p-12 bg-[#FAFAFA]">
+      <div className="flex items-center justify-center p-6 sm:p-12 bg-[var(--platform-surface)]">
         <div className="w-full max-w-md">
-          <Link to="/" className="lg:hidden flex items-center justify-center gap-2 mb-8">
-            <span className="w-9 h-9 rounded-xl brand-bg text-white grid place-items-center"><Sparkles className="w-5 h-5" /></span>
-            <span className="font-head font-extrabold text-2xl brand-text">{settings.platform_name}</span>
-          </Link>
-          <h1 className="font-head text-3xl font-extrabold brand-text mb-2">{title}</h1>
-          {subtitle && <p className="text-slate-500 mb-8">{subtitle}</p>}
+          <Link to="/" className="lg:hidden flex justify-center mb-10" data-testid="auth-mobile-home"><BrandLogo tagline testId="auth-mobile-brand" /></Link>
+          <h1 className="font-head text-3xl font-extrabold brand-text mb-2" data-testid="auth-title">{title}</h1>
+          {subtitle && <p className="text-slate-500 mb-8" data-testid="auth-subtitle">{subtitle}</p>}
           {children}
           {footer && <div className="mt-6 text-center text-slate-600 text-sm">{footer}</div>}
         </div>

@@ -6,8 +6,8 @@ export const useBrand = () => useContext(BrandContext);
 
 const DEFAULTS = {
   platform_name: "منصتي",
-  logo_url: null,
-  colors: { primary: "#0A2540", secondary: "#D4AF37", accent: "#2563EB" },
+  logo_url: "/brand/logo.webp",
+  colors: { primary: "#071D32", secondary: "#2563EB", accent: "#2563EB" },
 };
 
 export function BrandProvider({ children }) {
@@ -28,7 +28,7 @@ export function BrandProvider({ children }) {
       setSettings(merged);
       applyColors(merged.colors);
       // Only set a fallback title if a page (usePageMeta) hasn't claimed it.
-      if (merged.platform_name && !window.__pageMetaSet) document.title = `${merged.platform_name} · أنشئ موقعك الإلكتروني`;
+      if (merged.platform_name && !window.__pageMetaSet) document.title = `${merged.platform_name} · فكرتك تبدأ بموقع`;
     } catch { /* keep defaults */ }
   }, [applyColors]);
 

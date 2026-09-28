@@ -1,141 +1,116 @@
 {
-  "project_context": {
-    "name": "Manasati (منصتي)",
-    "description": "Arabic-first, fully RTL SaaS website builder targeting Saudi Arabia and the Gulf.",
-    "goal": "Outclass competitor mnasati.com with a dramatically better, premium, 'Godly' aesthetic. Move away from generic AI-slop to a distinct, high-contrast, premium SaaS identity.",
-    "stack": "React 19, React Router 7, Tailwind, shadcn/ui, framer-motion, lucide-react (.js files only)"
+  "brand": {
+    "name": "منصتي",
+    "tagline": "فكرتك تبدأ بموقع",
+    "logos": {
+      "horizontal": "https://customer-assets-v7afamib.emergentagent.net/job_domainly-gulf/artifacts/r7gluds8_C8B6112A-582D-49F9-9AAA-5E4D393DB4CB.webp",
+      "portrait": "https://customer-assets-v7afamib.emergentagent.net/job_domainly-gulf/artifacts/0cpmc2dn_507E7EE1-ACB4-4086-94F8-2374C67D26F9.png",
+      "brand_board": "https://customer-assets-v7afamib.emergentagent.net/job_domainly-gulf/artifacts/37ligl99_17D5F3A4-F0DE-4FC1-8A99-63DF81035DB1.png",
+      "banner": "https://customer-assets-v7afamib.emergentagent.net/job_domainly-gulf/artifacts/3lh0y02g_5E75C7A4-27BF-4230-8E01-73D9B01538C1.webp"
+    }
   },
-  "global_design_system": {
-    "theme_archetype": "ARCHETYPE 4 (Swiss & High-Contrast) + ARCHETYPE 5 (Luxury)",
-    "aesthetic": "Oasis & Obsidian - A highly premium, trustworthy, and effortless look. Deep obsidian dark modes for the pro-builder, crisp bone-white for marketing, punctuated by high-contrast layout tensions.",
-    "colors": {
-      "light": {
-        "--background": "0 0% 99%",
-        "--foreground": "240 10% 4%",
-        "--card": "0 0% 100%",
-        "--card-foreground": "240 10% 4%",
-        "--popover": "0 0% 100%",
-        "--popover-foreground": "240 10% 4%",
-        "--primary": "221 83% 53%",
-        "--primary-foreground": "210 40% 98%",
-        "--secondary": "240 5% 96%",
-        "--secondary-foreground": "240 6% 10%",
-        "--muted": "240 5% 96%",
-        "--muted-foreground": "240 4% 46%",
-        "--accent": "38 92% 50%",
-        "--accent-foreground": "240 6% 10%",
-        "--destructive": "0 84% 60%",
-        "--destructive-foreground": "0 0% 98%",
-        "--border": "240 6% 90%",
-        "--input": "240 6% 90%",
-        "--ring": "221 83% 53%",
-        "--radius": "0.75rem"
+  "typography": {
+    "primary_font": "Tajawal, sans-serif",
+    "secondary_font": "Cairo, sans-serif",
+    "headings": "Tajawal (Bold/Black), tight tracking (tracking-tight)",
+    "body": "Tajawal (Regular/Medium), loose line-height (leading-relaxed)",
+    "rules": [
+      "Use explicit Arabic web fonts from Google Fonts: @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap');",
+      "No 'Inter' or generic sans for headings.",
+      "Headings max scale: text-4xl to text-6xl (clamp fluidly).",
+      "RTL (Right-to-Left) is MANDATORY. Ensure <html dir='rtl'> and Tailwind RTL features (start/end instead of left/right) are used."
+    ]
+  },
+  "colors": {
+    "primary_navy": "#071D32",
+    "primary_blue": "#2563EB",
+    "pale_background": "#F4F7FC",
+    "archetype": "SWISS & HIGH-CONTRAST + BUSINESS TRUST",
+    "strategy": [
+      "Use Pale Background (#F4F7FC) for app background.",
+      "Use Primary Navy (#071D32) for text, heavy headings, footers, and solid structural blocks.",
+      "Use Primary Blue (#2563EB) strictly for primary actions, CTAs, and active states.",
+      "Tint neutral grays slightly with blue to match the navy.",
+      "Do NOT use pure #000000."
+    ]
+  },
+  "visual_enhancers": {
+    "surfaces": [
+      "Marketing: Glassmorphism (bg-white/70 backdrop-blur-xl border-white/40) for sticky headers over backgrounds.",
+      "Dashboards: Flat solid surfaces, subtle 1px border (border-[#071D32]/10), soft shadow on hover.",
+      "No full transparent backgrounds under text. Use glass or solid blocks."
+    ],
+    "shadows": "Ambient + direct layered shadows. Soft diffuse shadows for cards.",
+    "borders": "1px crisp inner borders for structural clarity. Nested radii (child <= parent)."
+  },
+  "layouts": {
+    "marketing": "Asymmetric Bento Grids. Large hero sections. Generous spacing (p-12 to p-24).",
+    "dashboards": "High-density grids (grid-cols-1 md:grid-cols-3 lg:grid-cols-4), tight gaps (gap-4). Cardless or very subtle 1px border cards.",
+    "spacing": "2-3x more spacing than typical templates. Use p-8 instead of p-4.",
+    "alignment": "RTL-first. Align right by default for paragraphs and labels. Ensure icons are on the logical start (right) side of text."
+  },
+  "motion": {
+    "rules": [
+      "Micro-animations on ALL interactive elements (hover states, click/press).",
+      "Use specific transitions (e.g. transition: transform 0.2s ease, opacity 0.2s ease), NOT 'transition: all'.",
+      "Staggered entrance animations for lists and bento grids.",
+      "Hover state color must be lighter hue of active state."
+    ]
+  },
+  "components": {
+    "libraries": [
+      "Shadcn/UI for dashboard/admin panels (tables, dropdowns, dialogs). heavily customized to match brand.",
+      "Native HTML+Tailwind for Marketing layout.",
+      "lucide-react for icons (ensure RTL mirroring if direction matters)."
+    ],
+    "rules": [
+      "Use pill-shaped or slightly rounded buttons (rounded-lg).",
+      "Do NOT use HTML <select> or <input type=\"date\">. Use Shadcn equivalents."
+    ]
+  },
+  "accessibility": {
+    "rules": [
+      "All text must meet minimum 4.5:1 contrast.",
+      "Explicitly set text color on hover.",
+      "Support prefers-reduced-motion.",
+      "Ensure logical focus order in RTL."
+    ]
+  },
+  "image_urls": {
+    "templates_showcase": [
+      {
+        "url": "https://images.unsplash.com/photo-1634084462412-b54873c0a56d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTV8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjB3ZWJzaXRlJTIwdGVtcGxhdGUlMjB1aXxlbnwwfHx8fDE3OTA1NzUxMjh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Modern website template showcase 1",
+        "category": "marketing_templates"
       },
-      "dark": {
-        "--background": "240 10% 4%",
-        "--foreground": "0 0% 98%",
-        "--card": "240 10% 6%",
-        "--card-foreground": "0 0% 98%",
-        "--popover": "240 10% 4%",
-        "--popover-foreground": "0 0% 98%",
-        "--primary": "217 91% 60%",
-        "--primary-foreground": "222 47% 11%",
-        "--secondary": "240 4% 16%",
-        "--secondary-foreground": "0 0% 98%",
-        "--muted": "240 4% 16%",
-        "--muted-foreground": "240 5% 65%",
-        "--accent": "38 92% 50%",
-        "--accent-foreground": "240 6% 10%",
-        "--destructive": "0 63% 31%",
-        "--destructive-foreground": "0 0% 98%",
-        "--border": "240 4% 16%",
-        "--input": "240 4% 16%",
-        "--ring": "217 91% 60%"
+      {
+        "url": "https://images.unsplash.com/photo-1648134859186-a05fb609f41e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTV8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjB3ZWJzaXRlJTIwdGVtcGxhdGUlMjB1aXxlbnwwfHx8fDE3OTA1NzUxMjh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Modern website template showcase 2",
+        "category": "marketing_templates"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1648134859177-66e35b61e106?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTV8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB3ZWJzaXRlJTIwdGVtcGxhdGUlMjB1aXxlbnwwfHx8fDE3OTA1NzUxMjh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Modern ecommerce UI",
+        "category": "ecommerce_showcase"
       }
-    },
-    "typography": {
-      "strategy": "The Anti-Default Rule applies. Overhaul the Arabic typography scale.",
-      "primary_heading_font": "IBM Plex Sans Arabic, Cairo, or Almarai. MUST use font-black (900) or font-extrabold (800) for H1/H2.",
-      "secondary_body_font": "Tajawal or Inter (for English numbers/metrics).",
-      "heading_rules": {
-        "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-tight",
-        "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-snug",
-        "overline": "uppercase text-xs tracking-[0.2em] font-bold text-muted-foreground"
-      }
-    },
-    "spacing_and_layout": {
-      "philosophy": "Generous Spacing + The Bento Grid Protocol (Tetris for Marketing, High Density for Builder).",
-      "containers": "Use max-w-7xl mx-auto px-6 md:px-12 lg:px-20",
-      "bento_marketing": "grid-cols-1 md:grid-cols-12 gap-6 or gap-8. Mix spans (col-span-8, col-span-4) for aggressive asymmetry.",
-      "surface_styles": {
-        "marketing_cards": "Glassmorphism (backdrop-blur-xl bg-white/70 or bg-black/60) with 1px border-white/20.",
-        "builder_dashboard": "Neumorphism/Solid surfaces with 1px border-border, shadow-sm, flat background."
-      }
-    }
-  },
-  "rtl_arabic_guidelines": {
-    "critical_mandate": "NEVER use physical direction utility classes (ml, mr, pl, pr, left, right). MUST use logical properties.",
-    "logical_classes": {
-      "margins": "ms-* (margin-start), me-* (margin-end)",
-      "paddings": "ps-* (padding-start), pe-* (padding-end)",
-      "borders": "border-s-*, border-e-*",
-      "radii": "rounded-s-*, rounded-e-*",
-      "flex_grid": "flex-row defaults to RTL in dir='rtl'. Do not use flex-row-reverse unless specifically flipping layout."
-    },
-    "icons": "Icons implying direction (arrows, chevrons) MUST be wrapped in a class or mapped to flip in RTL (e.g., `rtl:rotate-180`).",
-    "text_alignment": "Avoid center alignment for paragraphs. Default to text-start."
-  },
-  "marketing_site_blueprint": {
-    "header": "Fixed, Glassmorphism (backdrop-blur-xl bg-background/70). NEVER fully transparent. Include Brand, Nav Links, and CTA 'ابدأ مجانا' (Start for free).",
-    "hero_section": "Text on start (right in RTL), dynamic visual on end (left in RTL). Headline: Benefit-led. CTA: High contrast pill button. Visual: Abstract 3D shape or highly polished builder UI floating over a subtle gradient orb.",
-    "features_bento": "Asymmetrical grid showcasing builder features (AI generation, RTL perfection, Store). Heavy use of lucide-react icons with subtle glowing backgrounds.",
-    "template_showcase": "Horizontal swiper or masonry grid. Hovering over a template card reveals a 'Live Preview' button with framer-motion scale-up effect.",
-    "pricing_preview": "Monthly/Yearly toggle. 3 plans. Middle plan scaled up (scale-105) with 'The Tracing Beam' border effect (animated gradient border).",
-    "integrations_strip": "Grayscale logos (Moyasar, ResellerClub, etc.) moving in an infinite Marquee using purely CSS or framer-motion.",
-    "footer": "Massive typography for final CTA ('أطلق منصتك الآن'). Dark footer contrasting with a light body."
-  },
-  "template_builder_renderer": {
-    "architecture_rule": "Templates MUST NOT have hardcoded colors. They must rely exclusively on CSS variables scoped to their wrapper.",
-    "theme_injection": "Wrap the rendered template in `<div className='template-theme-wrapper' style={{ '--primary': template.colors.primary, '--background': template.colors.bg }}>`.",
-    "live_preview_experience": "Instead of a static thumbnail, the 'Preview' route must render the actual section components inside a scaled container (e.g., `transform: scale(0.75); transform-origin: top center;`) to look exactly like the real site.",
-    "section_components": {
-      "hero": "Uses `--background` and `--foreground`. CTA button uses `--primary`.",
-      "services": "Grid of cards. Cards use `--card` background.",
-      "store": "Products grid. Cart and checkout use Shadcn components customized with template variables."
-    }
-  },
-  "ui_components_customization": {
-    "buttons": "Pill-shaped (rounded-full) or crisp rounded-lg. Add transition-transform hover:-translate-y-0.5 active:scale-95.",
-    "cards": "Remove default Shadcn heavy shadows. Use flat borders `border border-border/40` and hover lift.",
-    "dialogs": "Backdrop blur on the overlay (`backdrop-blur-sm bg-black/40`). Content must be strictly RTL aligned.",
-    "inputs": "Focus state must be highly visible: `focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2`."
-  },
-  "motion_and_interactions": {
-    "philosophy": "Micro-interactions on every clickable element. Static = dead.",
-    "framer_motion_defaults": {
-      "entrance": "{ initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] } }",
-      "stagger": "Use variants to stagger lists (e.g., pricing features, template cards)."
-    }
-  },
-  "media_and_assets": {
-    "hero_abstract": "https://images.unsplash.com/photo-1676731820551-4b2988ae4e29?crop=entropy&cs=srgb&fm=jpg&q=85",
-    "dashboard_mockup_1": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=srgb&fm=jpg&q=85",
-    "dashboard_mockup_2": "https://images.unsplash.com/photo-1763718528755-4bca23f82ac3?crop=entropy&cs=srgb&fm=jpg&q=85",
-    "testimonial_arab_1": "https://images.unsplash.com/photo-1616147147027-60d49d3582c4?crop=entropy&cs=srgb&fm=jpg&q=85",
-    "testimonial_arab_2": "https://images.unsplash.com/photo-1624411024074-18a756682b50?crop=entropy&cs=srgb&fm=jpg&q=85"
-  },
-  "testing_requirements": {
-    "data_testid": "All interactive elements, forms, and key informational nodes MUST include `data-testid` in kebab-case."
+    ]
   },
   "instructions_to_main_agent": [
-    "Do not interact with the user, proceed directly with implementation.",
-    "Generate .js and .jsx files, NOT .tsx files.",
-    "Ensure `dir='rtl'` is set on the root HTML/layout and rely strictly on Tailwind logical properties (`ms-`, `pe-`, `border-s-`).",
-    "Do not center-align everything. Use asymmetric bento grids to build tension.",
-    "Implement the 'Oasis & Obsidian' color variables in index.css.",
-    "For the Template Renderer, do NOT hardcode colors in the section components. Use Shadcn's semantic CSS variables so the builder can inject custom hex codes dynamically.",
-    "Never use completely transparent backgrounds on headers or dialogs. Always use solid or glassmorphism.",
-    "Build the dashboard focusing on density and data correlation, using crisp borders and minimal shadows."
+    "Apply the RTL direction globally <html dir='rtl' lang='ar'>.",
+    "Use Tailwind RTL utilities (logical properties) where possible.",
+    "Replace existing placeholder logos with the provided Manasati logos.",
+    "Update global CSS to include Tajawal and Cairo fonts.",
+    "Redesign the marketing homepage using the Bento grid and asymmetric layouts, utilizing the Navy and Blue colors.",
+      "Do NOT alter core app logic or external integrations. Payment and domain integrations are gated/unconfigured, not mocked; retain truthful disabled states.",
+    "Use customer's existing sites functionality without overriding their individual site colors; apply the rebrand only to the platform marketing and dashboards."
   ],
-  "universal_guidelines_for_main_agent": "You tend to converge toward generic outputs. In frontend design, this creates the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends. Create depth through layered design elements with z-index hierarchy. Every interaction needs micro-animations. Use 2-3x more spacing than feels comfortable. DO NOT center align the app container. Never use AI assistant emoji characters for icons."
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not converge toward generic outputs. Use creative z-index depth, layered design elements, and glass-morphism.",
+    "Do NOT apply universal transitions (transition: all). Use specific properties.",
+    "Do NOT center align the app container (.App { text-align: center; }).",
+    "NEVER use Emoji characters as icons.",
+    "All interactive and key informational elements MUST include a data-testid attribute.",
+    "Use sonner for toasts.",
+    "Use lucide-react for icons."
+  ]
 }

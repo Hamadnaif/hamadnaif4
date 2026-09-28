@@ -90,9 +90,8 @@ export default function Templates() {
   return (
     <div data-testid="templates-page">
       {/* header band */}
-      <section className="brand-gradient text-white relative overflow-hidden">
-        <div className="orb w-96 h-96 -top-24 -start-24" style={{ background: "var(--brand-secondary)", opacity: 0.35 }} />
-        <div className="absolute inset-0 dotted-grid opacity-40" />
+      <section className="identity-dark text-white relative overflow-hidden">
+        <div className="absolute inset-0 dotted-grid opacity-30" />
         <div className="relative max-w-7xl mx-auto px-6 py-20 text-center">
           <span className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 text-sm mb-5">
             <Sparkles className="w-4 h-4 gold-text" /> {loading ? "قوالب" : `${templates.length}+`} قالب احترافي جاهز

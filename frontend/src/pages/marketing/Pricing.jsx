@@ -30,8 +30,8 @@ export default function Pricing() {
 
       <div className="flex justify-center mb-12">
         <div className="inline-flex bg-white border border-slate-200 rounded-full p-1" data-testid="cycle-toggle">
-          <button onClick={() => setCycle("monthly")} className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${cycle === "monthly" ? "brand-bg text-white" : "text-slate-600"}`}>شهري</button>
-          <button onClick={() => setCycle("yearly")} className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${cycle === "yearly" ? "brand-bg text-white" : "text-slate-600"}`}>سنوي <span className="text-xs gold-text">(وفّر شهرين)</span></button>
+          <button onClick={() => setCycle("monthly")} data-testid="pricing-monthly" aria-pressed={cycle === "monthly"} className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${cycle === "monthly" ? "brand-accent-bg text-white" : "text-slate-600"}`}>شهري</button>
+          <button onClick={() => setCycle("yearly")} data-testid="pricing-yearly" aria-pressed={cycle === "yearly"} className={`px-6 py-2 rounded-full text-sm font-semibold transition-colors ${cycle === "yearly" ? "brand-accent-bg text-white" : "text-slate-600"}`}>سنوي <span className={`text-xs ${cycle === "yearly" ? "text-white" : "brand-accent-text"}`}>(وفّر شهرين)</span></button>
         </div>
       </div>
 

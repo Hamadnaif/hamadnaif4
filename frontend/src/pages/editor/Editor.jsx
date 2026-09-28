@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api, apiError, mediaUrl } from "@/lib/api";
 import { toast } from "sonner";
 import SectionRenderer from "@/components/SectionRenderer";
+import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -421,7 +422,8 @@ export default function Editor() {
       {/* Top bar */}
       <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/dashboard")} className="text-slate-500 hover:brand-text" data-testid="editor-back"><ArrowRight className="w-5 h-5" /></button>
+          <button onClick={() => navigate("/dashboard")} className="text-slate-500 hover:brand-text" data-testid="editor-back" aria-label="العودة إلى مواقعي"><ArrowRight className="w-5 h-5" /></button>
+          <div className="hidden xl:block border-e border-slate-200 pe-4"><BrandLogo testId="editor-brand-logo" /></div>
           <input value={site.name} onChange={(e) => setSite({ ...site, name: e.target.value })} className="font-head font-extrabold brand-text bg-transparent outline-none text-lg" data-testid="editor-site-name" />
         </div>
         <div className="flex items-center gap-2">

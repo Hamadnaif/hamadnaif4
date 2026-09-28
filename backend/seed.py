@@ -28,8 +28,9 @@ GYM = [U("1548690312-e3b507d8c110"), U("1641337221253-fdc7237f6b61"), U("1722925
 DEFAULT_SETTINGS = {
     "_key": "platform",
     "platform_name": "منصتي",
-    "logo_url": None,
-    "colors": {"primary": "#0A2540", "secondary": "#D4AF37", "accent": "#2563EB"},
+    "logo_url": "/brand/logo.webp",
+    "colors": {"primary": "#071D32", "secondary": "#2563EB", "accent": "#2563EB"},
+    "brand_identity_version": 1,
     "font": "Tajawal",
     "contact_email": "info@manasati.sa",
     "contact_phone": "+966500000000",
@@ -264,6 +265,13 @@ async def run_seed():
 
     if not await db.settings.find_one({"_key": "platform"}):
         await db.settings.insert_one(dict(DEFAULT_SETTINGS))
+
+    # Apply the approved identity once, retaining future admin customizations.
+    await db.settings.update_one(
+        {"_key": "platform", "brand_identity_version": {"$ne": 1}},
+        {"$set": {key: DEFAULT_SETTINGS[key] for key in
+                  ("logo_url", "colors", "font", "brand_identity_version")}},
+    )
 
     if await db.plans.count_documents({}) == 0:
         for p in DEFAULT_PLANS:
