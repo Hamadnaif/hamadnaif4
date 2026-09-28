@@ -1,0 +1,74 @@
+{
+  "summary": "Iteration 15 - REAL Tap sandbox canonical verification for order 6aba8f756f124f0de3f93fac. Exactly ONE server-side Tap retrieve_charge performed with configured sk_test_ secret; validate_charge() passed; owner user subscription fully consistent with the stable paid_at. This is a REAL sandbox result (test mode, live_mode=false), clearly distinct from prior mocked unit tests in iter13/iter14.",
+  "canonical_verification": {
+    "tap_service_configured": true,
+    "order_fields_ok": true,
+    "order": {
+      "provider": "tap",
+      "mode": "test",
+      "plan_name": "البداية",
+      "cycle": "monthly",
+      "amount": 29.0,
+      "currency": "SAR",
+      "status": "paid",
+      "gateway_status": "CAPTURED",
+      "paid_at_present": true,
+      "fulfilled_at_present": true,
+      "payment_id_prefix_valid": true
+    },
+    "retrieve_charge_ok": true,
+    "charge_summary_sanitized": {
+      "object": "charge",
+      "id_matches_payment_id": true,
+      "live_mode": false,
+      "status": "CAPTURED",
+      "amount": 29,
+      "currency": "SAR",
+      "reference.order_matches": true,
+      "reference.transaction_matches": true,
+      "metadata.order_id_matches": true,
+      "metadata.plan_id_matches": true,
+      "transaction.created_present": true
+    },
+    "validate_charge_passed": true,
+    "captured_and_test_mode": true,
+    "owner_subscription": {
+      "plan_id_matches_order": true,
+      "subscription_status": "active",
+      "subscription_payment_mode": "test",
+      "subscription_payment_order_matches": true,
+      "subscription_payment_at_matches_paid_at": true,
+      "plan_cycle_matches": true,
+      "subscription_renews_at_consistent_with_paid_at": true
+    },
+    "cancelled_orders_sanity": {
+      "6aba8ef36f124f0de3f93faa": {"status": "cancelled", "gateway_status": "CANCELLED", "no_paid_or_fulfilled": true},
+      "6aba8eae6f124f0de3f93fa8": {"status": "cancelled", "gateway_status": "CANCELLED", "no_paid_or_fulfilled": true}
+    },
+    "provider_webhook_signal": {
+      "post_field_present": true,
+      "post_status": "PENDING",
+      "interpretation": "Provider explicitly reports webhook delivery is PENDING (not delivered/confirmed by Tap yet). The DB fulfilment therefore came from the successful browser-return verification path, NOT from a provider webhook callback confirmation."
+    },
+    "overall": "PASS"
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/backend/tests/canonical_check_iter15.py"],
+  "action_items": [
+    "Optional: monitor whether Tap eventually flips post.status from PENDING to SUCCESSFUL for order 6aba8f756f124f0de3f93fac (webhook delivery confirmation). Fulfilment is already correct and idempotent, so no user impact expected either way.",
+    "No code changes required. Publish preview -> production only after separately agreed rollout."
+  ],
+  "critical_code_review_comments": [
+    "tap_service.retrieve_charge + payment_orders.validate_charge form a solid canonical guard (charge id, order/transaction refs, metadata order_id + plan_id, amount via Decimal, currency, live_mode=false). Real sandbox charge matches all constraints.",
+    "_grant_subscription uses stable paid_at with $lte guard and idempotent fulfilled_at update; retries via webhook or browser verify remain non-extending. Confirmed by owner state matching paid_at exactly."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "N/A (skipped per request)"},
+  "test_credentials": "none used - private DB read + one server-side Tap GET using sk_test_ from backend/.env",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "iter15 recorded the REAL Tap sandbox outcome for order 6aba8f756f124f0de3f93fac: CAPTURED/test-mode charge canonically matches order and owner. IMPORTANT DISTINCTION: provider reports post.status=PENDING, meaning Tap has NOT confirmed webhook delivery. Current fulfilment was driven by the browser-return verification path. Do not conflate this with a provider webhook success. All prior iter13/iter14 tests were mocked; only iter15 is a real sandbox canonical check.",
+  "rca of the issue": "Not a bug. User's message 'اتممت عملية شراء' corresponds to a real Tap sandbox hosted-checkout completion. Server-side GET /charges/{id} returns object=charge, live_mode=false, status=CAPTURED with matching reference/metadata/amount/currency. Owner user record was updated exactly once with subscription_status=active, plan_id, cycle, subscription_payment_order=this order, subscription_payment_at=order.paid_at, and subscription_renews_at = paid_at + 30 days. Webhook is still marked PENDING by provider, which is expected in sandbox and harmless because the fulfilment path is idempotent."
+}
