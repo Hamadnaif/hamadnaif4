@@ -8,7 +8,7 @@ Arabic RTL SaaS platform to build websites and sell domains, similar in concept 
 - Email: messages shown in dashboard now; Resend deferred.
 - Payment: NeoLeap / Al Rajhi Tranportal replaces the earlier Moyasar path. Integration code exists but merchant/UAT settings are missing; no real payment has been verified.
 - Brand: retain «منصتي»; user supplied new logo/brand board and explicitly approved applying it: navy #071D32, blue #2563EB, pale #F4F7FC, tagline «فكرتك تبدأ بموقع».
-- Domain reseller: ResellerClub default (deferred — disabled until account/API keys).
+- Domain reseller: ResellerClub. User confirmed a newly supplied API key belongs to this provider; saved securely in preview backend .env using existing RESELLERCLUB_API_KEY and reseller ID. Provider environment stays live; only read-only availability/pricing authorized. Upstream HTTP 403 still blocks validation.
 - Phase 1 first: full journey (create → edit → publish → admin), then subscriptions/payments/domains.
 
 ## Architecture
@@ -18,6 +18,17 @@ Arabic RTL SaaS platform to build websites and sell domains, similar in concept 
 - Media: images stored base64 in Mongo, served via /api/media/{id} (max 5MB, type-validated).
 - AI: Emergent universal LLM key (OpenAI gpt-5.4-mini + Gemini 3.1 Pro) for Arabic content generation in editor.
 
+
+
+## ResellerClub key update and validation (2026, iteration_8)
+- User confirmed supplied credential belongs to ResellerClub. Updated preview `RESELLERCLUB_API_KEY` only; existing reseller ID/live mode/database/owner settings preserved. Real admin email was already correct; no authentication changes.
+- Integration playbook + official availability documentation used. Availability now uses configured `RESELLERCLUB_AVAILABILITY_URL`; pricing uses `RESELLERCLUB_BASE_URL`. Backend restarted after env updates. No secret values are stored in this document.
+- `domain_provider.py`: central sanitized read-only request handler, HTTP/transport/invalid-JSON/provider-error handling without credential-bearing URLs; httpx INFO disabled to prevent query-key logging; unknown/missing statuses map to None, available to True, regthroughus/regthroughothers to False.
+- Live provider remains blocked by HTTP 403 Cloudflare HTML. No real successful availability/pricing/authentication or purchase verified. UI keeps availability unconfirmed, prices indicative, and purchase disabled. Do not present mocked unit cases as provider success.
+- `/test_reports/iteration_8.json`: 17/17 passed (13 MOCKED upstream unit cases + 4 real app API/smoke cases); browser domain search/error/retry/disabled-buy assertions passed. Product API is not mocked. Tests added: `/backend/tests/test_domain_provider.py`, `/backend/tests/test_domain_search_live.py`.
+- QA noted historical logs/diagnostics held credential-bearing upstream errors. Redacted query API-key values in one backend log and 34 domain-diagnostic records, preserving other diagnostic content. Subsequent read-only scans verified no remaining unredacted api-key query values in those locations.
+- Blocker: verify provider IP allowlist for preview 34.16.56.64; allow propagation. If still blocked, provider support must inspect the administrative-rule rejection. Exact WAF/allowlist relationship and key validity remain unproven; no bypass attempted by main agent.
+- Other user-requested next steps remain pending: differentiated template layouts, downloadable identity pack, NeoLeap UAT after secure merchant configuration. This turn focused on the user's ResellerClub credential/IP follow-up.
 
 ## Implemented — Supplied identity refresh (2026, iteration_7)
 - User request: «تصميم وهوية جديدة» with logo/brand board, followed by «الهوية الجديدة اضفها». Approved use of supplied marks, not generated replacements.
@@ -44,7 +55,8 @@ Marketing site; auth (login/register/reset); customer dashboard (sites+status, d
 - [x] Verified by testing agent (iteration_5): backend 48/50 pass (2 = pre-existing pytest xdist ordering coupling, not a product bug), all QA frontend flows pass.
 
 ### Known external blockers (need user action)
-- ResellerClub returns 403 from the preview egress IP. User must whitelist the current outbound IP; do not reuse a historical IP after preview/deployment changes. Only search/pricing is wired — registration/purchase remains gated and unbuilt.
+- ResellerClub read-only requests still return Cloudflare HTML HTTP 403 ('Request forbidden by administrative rules'). Latest verified preview egress: 34.16.56.64. Whitelist confirmation is pending; if configured and propagation has elapsed, ask provider support to investigate its protection rules using the error/IP. Do not claim that a separate Cloudflare whitelist is proven necessary or that credentials are valid: the blocked requests did not verify them. Real availability/pricing and registration/purchase remain unavailable.
+- Deployment inventory previously found no production deployment. A later user message reports an asynchronous deployment has started; completion/live URL/production secrets/egress have NOT been verified. Recheck production egress after completion instead of assuming preview IP.
 - Contact phone +966500000000 is a placeholder — set a real number in Admin → Settings.
 - NeoLeap merchant/UAT configuration is missing → real electronic payment disabled. Crypto/disabled-state checks from the previous session are not an end-to-end payment test.
 - Production domain + wildcard DNS + SSL not set up → real subdomain serving & custom-domain verification disabled.

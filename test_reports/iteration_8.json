@@ -1,0 +1,38 @@
+{
+  "summary": "Read-only validation of ResellerClub domain search after preview key update. 17/17 pytest cases pass (13 mocked unit + 4 live/smoke). Public API returns sanitized friendly Arabic error, available=null, price_source=indicative — provider is currently blocked upstream (Cloudflare 403), which is expected and documented. Public JSON never leaks the API key or upstream URL, and current logger path emits only 'ResellerClub HTTP 403' (older log lines from before the sanitization fix still exist historically). Frontend /domains renders results container, retry button, indicative-price banner, unconfirmed availability chip, and disabled buy buttons; no credentials or upstream host present in DOM. No purchases, auth, or product code touched.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/public/domain/search", "issue": "Upstream ResellerClub still returns Cloudflare 403 for current egress IP 34.16.56.64 — provider whitelist pending. Not a code bug; RCA owns externally. Friendly error path already handles it."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_domain_provider.py",
+    "/app/backend/tests/test_domain_search_live.py",
+    "/app/test_reports/pytest/iter8_results.xml"
+  ],
+  "action_items": [
+    "Await ResellerClub IP whitelist for egress 34.16.56.64 to flip provider_error=false (external, no code change).",
+    "Optional hardening: after whitelist lands, add an integration test asserting available in {true,false} and price_source=='provider' for at least one TLD."
+  ],
+  "critical_code_review_comments": [
+    "domain_provider._get_provider_json correctly strips credentials from raised errors (uses 'from None'); httpx logger pinned to WARNING so INFO URL lines are suppressed for future requests.",
+    "ENV URLs (RESELLERCLUB_BASE_URL, RESELLERCLUB_AVAILABILITY_URL) are read with no hardcoded fallback — fails fast if missing, matches env-only policy.",
+    "routers/public.py logs only the sanitized RuntimeError message (str(e)); DB diagnostic record stores no URL/key, only truncated message + flags.",
+    "Historical backend.err.log contains pre-fix lines with the key in httpx INFO output — those are from before the fix and code has since been corrected. Consider a log-rotation/scrub for the historical file only (out of scope for this task).",
+    "Frontend DomainSearch renders 'التوفر غير مؤكد' for available=null and disables buy buttons; matches read-only contract."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (17/17)", "frontend": "100% (all UI assertions passed)"},
+  "test_credentials": "N/A — endpoint is public, no auth used.",
+  "seed_data_creation": "None. No accounts, orders, or sites created.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Domain search is currently blocked upstream (Cloudflare 403). Do NOT assert live availability success until RESELLERCLUB whitelist confirms new egress. The 'friendly error' contract to assert is: response 200 with provider_error=true, enabled=false, available=null everywhere, price_source='indicative', Arabic 'message' present, no 'api-key'/'auth-userid'/'httpapi.com'/'resellerclub' substrings in response body or DOM. Mocked unit tests in test_domain_provider.py cover status mapping and error sanitization. New test files: test_domain_provider.py, test_domain_search_live.py.",
+  "rca of the issue": "Upstream Cloudflare 403 on both pricing and availability hosts — RCA is external IP whitelist (egress 34.16.56.64 not on ResellerClub allow-list). Application-level fix (sanitize errors, hide credential-bearing URL from public payload, pin httpx logger) is in place and verified. Mitigation: wait for whitelist / update whitelisted IP; no product change required."
+}
