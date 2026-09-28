@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { useBrand } from "@/context/BrandContext";
 import { Button } from "@/components/ui/button";
 import SectionRenderer from "@/components/SectionRenderer";
 import TemplateTheme from "@/components/TemplateTheme";
-import { Eye, ArrowLeft, Monitor, Smartphone, X, Sparkles } from "lucide-react";
+import { Eye, ArrowLeft, Monitor, Smartphone, X, Sparkles, Loader2 } from "lucide-react";
 
 function LivePreview({ template, onClose }) {
   const { settings } = useBrand();
@@ -75,11 +76,13 @@ function LivePreview({ template, onClose }) {
 }
 
 export default function Templates() {
+  usePageMeta("قوالب احترافية جاهزة", "تصفّح عشرات القوالب العربية الاحترافية في منصتي، عايِنها حيًّا بكامل أقسامها وألوانها، وابدأ التحرير فورًا.");
   const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState("all");
   const [preview, setPreview] = useState(null);
 
-  useEffect(() => { api.get("/public/templates").then((r) => setTemplates(r.data)).catch(() => {}); }, []);
+  useEffect(() => { api.get("/public/templates").then((r) => setTemplates(r.data)).catch(() => {}).finally(() => setLoading(false)); }, []);
 
   const cats = useMemo(() => ["all", ...Array.from(new Set(templates.map((t) => t.category)))], [templates]);
   const filtered = cat === "all" ? templates : templates.filter((t) => t.category === cat);
@@ -92,7 +95,7 @@ export default function Templates() {
         <div className="absolute inset-0 dotted-grid opacity-40" />
         <div className="relative max-w-7xl mx-auto px-6 py-20 text-center">
           <span className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 text-sm mb-5">
-            <Sparkles className="w-4 h-4 gold-text" /> {templates.length}+ قالب احترافي جاهز
+            <Sparkles className="w-4 h-4 gold-text" /> {loading ? "قوالب" : `${templates.length}+`} قالب احترافي جاهز
           </span>
           <h1 className="font-head text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-4">قوالب تبدأ منها، لا من الصفر</h1>
           <p className="text-white/80 max-w-2xl mx-auto text-lg">عايِن القالب حيًّا بكامل أقسامه وألوانه قبل أن تختاره، ثم ابدأ التحرير مباشرة من لوحة التحكم.</p>
@@ -110,7 +113,13 @@ export default function Templates() {
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((t, i) => (
+          {loading && (
+            <div className="col-span-full grid place-items-center py-20" data-testid="templates-loading"><Loader2 className="w-8 h-8 animate-spin brand-accent-text" /></div>
+          )}
+          {!loading && filtered.length === 0 && (
+            <p className="col-span-full text-center text-slate-500 py-16">لا توجد قوالب في هذا التصنيف.</p>
+          )}
+          {!loading && filtered.map((t, i) => (
             <motion.div
               key={t.id}
               initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}

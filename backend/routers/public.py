@@ -1,5 +1,6 @@
 import re
 import os
+import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
@@ -10,6 +11,7 @@ from email_service import send_contact_notification
 import domain_provider
 
 router = APIRouter(prefix="/public", tags=["public"])
+logger = logging.getLogger("public")
 
 
 def _now():
@@ -150,6 +152,7 @@ async def domain_search(q: str):
     availability = {}
     pricing = {}
     enabled = domain_provider.is_configured()
+    provider_error = False
     message = None
 
     if enabled:
@@ -159,28 +162,37 @@ async def domain_search(q: str):
                 pricing = await domain_provider.get_pricing(tlds)
             except Exception:
                 pricing = {}
-        except Exception:
+        except Exception as e:
             enabled = False
-            message = ("تعذّر الاتصال بمزوّد النطاقات. تأكد من إدراج عنوان IP الخاص بالخادم في القائمة "
-                       "البيضاء لدى ResellerClub ومن صحة بيانات الحساب.")
+            provider_error = True
+            # keep the technical diagnosis server-side only (never shown to visitors)
+            status = domain_provider.config_status()
+            logger.warning("ResellerClub connection failed (env=%s): %s", status.get("env"), e)
+            try:
+                await db.domain_diagnostics.insert_one({
+                    "query": q, "error": str(e)[:500],
+                    "provider_env": status.get("env"),
+                    "api_key_set": status.get("api_key"), "reseller_id_set": status.get("reseller_id"),
+                    "created_at": _now(),
+                })
+            except Exception:
+                pass
+            message = "تعذّر التحقق من توفّر النطاق حاليًا. يرجى إعادة المحاولة بعد قليل."
     else:
-        status = domain_provider.config_status()
-        missing = []
-        if not status["reseller_id"]:
-            missing.append("رقم الموزّع (Reseller ID)")
-        if not status["api_key"]:
-            missing.append("مفتاح API")
-        extra = ("، وإدراج عنوان IP الخادم في القائمة البيضاء" if status["api_key"] else "")
-        message = (f"البحث الحقيقي معطّل حتى إكمال ربط ResellerClub (المتبقّي: {'، '.join(missing)}{extra}). "
-                   "الأسعار تجريبية.")
+        message = "خدمة البحث عن النطاقات قيد التفعيل حاليًا. الأسعار المعروضة تقديرية وغير مؤكدة."
 
-    results = [{
-        "domain": f"{q}.{t}",
-        "tld": t,
-        "price": (pricing.get(t, {}).get("register") if pricing.get(t) else prices.get(t)),
-        "renew_price": (pricing.get(t, {}).get("renew") if pricing.get(t) else prices.get(t)),
-        "currency": "SAR",
-        "available": availability.get(t) if enabled else None,
-    } for t in tlds]
+    results = []
+    for t in tlds:
+        confirmed = enabled and (t in pricing)
+        results.append({
+            "domain": f"{q}.{t}",
+            "tld": t,
+            "price": (pricing.get(t, {}).get("register") if confirmed else prices.get(t)),
+            "renew_price": (pricing.get(t, {}).get("renew") if confirmed else prices.get(t)),
+            "currency": "SAR",
+            "price_source": "provider" if confirmed else "indicative",
+            "available": availability.get(t) if enabled else None,
+        })
 
-    return {"query": q, "enabled": enabled, "results": results, "message": message}
+    return {"query": q, "enabled": enabled, "provider_error": provider_error,
+            "results": results, "message": message}

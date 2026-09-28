@@ -53,6 +53,44 @@ async def _owned_site(site_id: str, user: dict) -> dict:
     return site
 
 
+_LIMIT_MSG_FREE = "وصلت للحد الأقصى للمواقع في الباقة المجانية. رقِّ باقتك لإنشاء موقع إضافي."
+_LIMIT_MSG_PAID = "وصلت للحد الأقصى للمواقع في باقتك الحالية. قم بالترقية."
+
+
+def _limit_msg(user: dict) -> str:
+    return _LIMIT_MSG_PAID if user.get("plan_id") else _LIMIT_MSG_FREE
+
+
+async def _at_site_limit(user: dict) -> bool:
+    """Free plan uses a lifetime creation cap (deleting a site does NOT free a slot);
+    paid plans use an active-site cap (deleting frees a slot)."""
+    limits = await _get_plan_limits(user)
+    max_sites = limits.get("sites", 1)
+    if user.get("plan_id"):
+        count = await db.sites.count_documents({"owner_id": user["id"]})
+        return count >= max_sites
+    oid = to_oid(user["id"])
+    u = await db.users.find_one({"_id": oid}) if oid else None
+    created = (u or {}).get("sites_created")
+    if created is None:
+        created = await db.sites.count_documents({"owner_id": user["id"]})
+    return created >= max_sites
+
+
+async def _bump_created(user: dict):
+    """Increment the lifetime creation counter for free-plan users."""
+    if user.get("plan_id"):
+        return
+    oid = to_oid(user["id"])
+    if not oid:
+        return
+    u = await db.users.find_one({"_id": oid})
+    created = (u or {}).get("sites_created")
+    if created is None:
+        created = await db.sites.count_documents({"owner_id": user["id"]})
+    await db.users.update_one({"_id": oid}, {"$set": {"sites_created": created + 1}})
+
+
 class CreateSiteBody(BaseModel):
     name: str
     template_id: str
@@ -77,10 +115,8 @@ async def list_sites(user: dict = Depends(get_current_user)):
 
 @router.post("")
 async def create_site(body: CreateSiteBody, user: dict = Depends(get_current_user)):
-    limits = await _get_plan_limits(user)
-    count = await db.sites.count_documents({"owner_id": user["id"]})
-    if count >= limits.get("sites", 1):
-        raise HTTPException(status_code=403, detail="وصلت للحد الأقصى من المواقع في باقتك. قم بالترقية.")
+    if await _at_site_limit(user):
+        raise HTTPException(status_code=403, detail=_limit_msg(user))
     tpl = await db.templates.find_one({"_id": to_oid(body.template_id)})
     if not tpl:
         raise HTTPException(status_code=404, detail="القالب غير موجود")
@@ -103,6 +139,7 @@ async def create_site(body: CreateSiteBody, user: dict = Depends(get_current_use
         "updated_at": _now(),
     }
     res = await db.sites.insert_one(doc)
+    await _bump_created(user)
     doc["_id"] = res.inserted_id
     return serialize(doc)
 
@@ -114,10 +151,8 @@ class AISiteBody(BaseModel):
 
 @router.post("/from-ai")
 async def create_site_from_ai(body: AISiteBody, user: dict = Depends(get_current_user)):
-    limits = await _get_plan_limits(user)
-    count = await db.sites.count_documents({"owner_id": user["id"]})
-    if count >= limits.get("sites", 1):
-        raise HTTPException(status_code=403, detail="وصلت للحد الأقصى من المواقع في باقتك. قم بالترقية.")
+    if await _at_site_limit(user):
+        raise HTTPException(status_code=403, detail=_limit_msg(user))
     config = body.config or {}
     subdomain = await _unique_subdomain(body.name)
     doc = {
@@ -128,6 +163,7 @@ async def create_site_from_ai(body: AISiteBody, user: dict = Depends(get_current
         "pages": config.get("pages", []), "published_at": None, "created_at": _now(), "updated_at": _now(),
     }
     res = await db.sites.insert_one(doc)
+    await _bump_created(user)
     doc["_id"] = res.inserted_id
     return serialize(doc)
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, LayoutTemplate, MousePointerClick, Rocket, Globe,
@@ -39,8 +40,8 @@ const FEATURES = [
 const FAQS = [
   { q: "هل أحتاج خبرة تقنية؟", a: "لا، المحرر يعتمد على أقسام جاهزة تضيفها وترتّبها بسهولة، ويمكنك توليد موقع كامل بالذكاء الاصطناعي من وصف واحد." },
   { q: "هل يمكنني ربط نطاقي الخاص؟", a: "نعم، تدعم المنصة ربط نطاق تملكه مع إرشادات سجلات DNS، بالإضافة إلى نطاق فرعي مجاني." },
-  { q: "كيف يتم الدفع؟", a: "سندعم بوابة دفع تناسب السوق السعودي. حاليًا الأسعار تجريبية وقابلة للتعديل قبل الإطلاق." },
-  { q: "ماذا يحدث عند انتهاء الاشتراك؟", a: "لا نحذف محتواك تلقائيًا؛ يُعرض حال الحساب وفق سياسة واضحة يمكن مراجعتها." },
+  { q: "كيف يتم الدفع؟", a: "يمكنك إنشاء موقعك مجانًا الآن. الدفع الإلكتروني عبر بوابة محلية قيد التفعيل، والأسعار المعروضة تجريبية قابلة للتعديل قبل الإطلاق الرسمي." },
+  { q: "ماذا يحدث عند انتهاء الاشتراك؟", a: "لا نحذف محتواك تلقائيًا. عند انتهاء الاشتراك المدفوع يعود حسابك إلى حدود الباقة المجانية، ويبقى بإمكانك الدخول والتحرير، وقد يتوقف عرض المواقع التي تتجاوز حدود المجاني حتى التجديد. تُحفظ بياناتك لمدة معقولة قبل أي إجراء." },
 ];
 
 function BuilderMockup() {
@@ -91,6 +92,7 @@ function BuilderMockup() {
 }
 
 export default function Home() {
+  usePageMeta("أنشئ موقعك الإلكتروني", "منصتي منصة عربية ذكية لإنشاء المواقع الإلكترونية وربط النطاقات لأصحاب المشاريع في السعودية والخليج — ابدأ مجانًا.");
   const [templates, setTemplates] = useState([]);
   const [plans, setPlans] = useState([]);
   const [faqOpen, setFaqOpen] = useState(0);
@@ -134,7 +136,7 @@ export default function Home() {
       {/* Trust / integrations strip */}
       <section className="border-b border-slate-200 bg-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <p className="text-center text-slate-400 text-sm mb-5">تكاملات دفع ونطاقات جاهزة تناسب السوق السعودي والخليجي</p>
+          <p className="text-center text-slate-400 text-sm mb-5">مصمّمة لتتكامل مع وسائل الدفع والنطاقات في السوق السعودي والخليجي</p>
           <div className="relative overflow-hidden no-scrollbar" style={{ maskImage: "linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent)" }}>
             <div className="marquee-track gap-12">
               {[...PARTNERS, ...PARTNERS].map((p, i) => (
