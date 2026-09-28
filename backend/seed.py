@@ -32,8 +32,9 @@ DEFAULT_SETTINGS = {
     "colors": {"primary": "#071D32", "secondary": "#2563EB", "accent": "#2563EB"},
     "brand_identity_version": 1,
     "font": "Tajawal",
-    "contact_email": "info@manasati.sa",
-    "contact_phone": "+966500000000",
+    "contact_email": "jaberra72@gmail.com",
+    "contact_phone": "0544354420",
+    "contact_details_version": 1,
     "platform_domain": "manasati.sa",
     "social": {"twitter": "", "instagram": "", "linkedin": ""},
     "pages_content": {
@@ -271,6 +272,12 @@ async def run_seed():
         {"_key": "platform", "brand_identity_version": {"$ne": 1}},
         {"$set": {key: DEFAULT_SETTINGS[key] for key in
                   ("logo_url", "colors", "font", "brand_identity_version")}},
+    )
+
+    await db.settings.update_one(
+        {"_key": "platform", "contact_details_version": {"$ne": 1}},
+        {"$set": {key: DEFAULT_SETTINGS[key] for key in
+                  ("contact_email", "contact_phone", "contact_details_version")}},
     )
 
     if await db.plans.count_documents({}) == 0:

@@ -43,7 +43,10 @@ export default function Footer() {
         <div className="border-t border-white/10">
           <div className="max-w-7xl mx-auto px-6 py-5 text-sm text-white/60 flex flex-col sm:flex-row justify-between gap-2">
             <span data-testid="footer-copyright">© {new Date().getFullYear()} {settings.platform_name}. جميع الحقوق محفوظة.</span>
-            <a href={`mailto:${settings.contact_email}`} data-testid="footer-email" className="hover:text-white transition-colors">{settings.contact_email}</a>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2" dir="ltr">
+              <a href={`mailto:${settings.contact_email}`} data-testid="footer-email" className="hover:text-white transition-colors">{settings.contact_email}</a>
+              {settings.contact_phone && <a href={`tel:${settings.contact_phone.replace(/[^\d+]/g, "")}`} data-testid="footer-phone" className="hover:text-white transition-colors">{settings.contact_phone}</a>}
+            </div>
           </div>
         </div>
       </div>
