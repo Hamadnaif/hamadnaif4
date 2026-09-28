@@ -8,7 +8,7 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
   AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Eye, Rocket, PowerOff, Trash2, Loader2, Globe, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Eye, Rocket, PowerOff, Trash2, Loader2, ExternalLink, Wand2 } from "lucide-react";
 
 const STATUS = {
   draft: { label: "مسودة", cls: "bg-slate-100 text-slate-600" },
@@ -80,14 +80,21 @@ export default function Sites() {
     <div data-testid="sites-page">
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-head text-xl font-extrabold brand-text">مواقعي ({sites.length})</h2>
-        <Button onClick={() => setCreating(true)} className="brand-bg text-white rounded-full" data-testid="create-site-btn"><Plus className="w-4 h-4 ms-1" /> موقع جديد</Button>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate("/dashboard/start")} className="brand-accent-bg text-white rounded-full" data-testid="start-wizard-btn"><Wand2 className="w-4 h-4 ms-1" /> المعالج الذكي</Button>
+          <Button onClick={() => setCreating(true)} variant="outline" className="rounded-full" data-testid="create-site-btn"><Plus className="w-4 h-4 ms-1" /> موقع جديد</Button>
+        </div>
       </div>
 
       {sites.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300" data-testid="sites-empty">
-          <Globe className="w-14 h-14 text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-600 mb-6">لم تنشئ أي موقع بعد. ابدأ بإنشاء موقعك الأول.</p>
-          <Button onClick={() => setCreating(true)} className="brand-bg text-white rounded-full"><Plus className="w-4 h-4 ms-1" /> إنشاء موقع</Button>
+        <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300" data-testid="sites-empty">
+          <span className="w-16 h-16 rounded-2xl brand-gradient text-white grid place-items-center mx-auto mb-4"><Wand2 className="w-8 h-8" /></span>
+          <h3 className="font-head text-2xl font-extrabold brand-text mb-2">ابدأ بموقعك الأول</h3>
+          <p className="text-slate-600 mb-6 max-w-md mx-auto">صِف نشاطك ودَع المعالج الذكي يبني لك موقعًا كاملًا خلال ثوانٍ، أو ابدأ من قالب جاهز.</p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => navigate("/dashboard/start")} className="brand-accent-bg text-white rounded-full px-6" data-testid="empty-wizard-btn"><Wand2 className="w-4 h-4 ms-1" /> المعالج الذكي</Button>
+            <Button onClick={() => setCreating(true)} variant="outline" className="rounded-full px-6"><Plus className="w-4 h-4 ms-1" /> من قالب</Button>
+          </div>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

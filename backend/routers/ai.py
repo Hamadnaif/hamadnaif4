@@ -138,3 +138,42 @@ async def generate_template(body: GenTemplateBody, user: dict = Depends(get_curr
               "pages": [{"id": "page_home", "title": "الرئيسية", "slug": "home", "is_home": True,
                          "seo": {"title": data.get("name", ""), "description": "", "image": ""}, "sections": sections}]}
     return {"name": data.get("name") or "موقعي", "config": config}
+
+
+class SuggestDomainsBody(BaseModel):
+    prompt: str
+    name: str = ""
+
+
+@router.post("/suggest-domains")
+async def suggest_domains(body: SuggestDomainsBody, user: dict = Depends(get_current_user)):
+    key = os.environ.get("EMERGENT_LLM_KEY")
+    if not key or not (body.prompt.strip() or body.name.strip()):
+        raise HTTPException(status_code=400, detail="أدخل وصف نشاطك")
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+    except Exception:
+        raise HTTPException(status_code=503, detail="مكتبة الذكاء الاصطناعي غير متوفرة")
+    import json as _json
+    import re as _re
+    prompt = (f"النشاط: {body.name} — {body.prompt}\n"
+              'اقترح ٥ أسماء نطاق قصيرة وسهلة التذكّر بالحروف اللاتينية (بدون امتداد وبدون مسافات، أحرف صغيرة وأرقام وشرطات فقط) تناسب هذا النشاط. '
+              'أعد JSON فقط بالشكل: {"suggestions":["name1","name2","name3","name4","name5"]}. لا تضف أي نص خارج JSON.')
+    chat = LlmChat(api_key=key, session_id=f"dom-{user['id']}",
+                   system_message="أنت خبير تسمية علامات تجارية تُخرج JSON صالحًا فقط.")
+    chat.with_model("openai", "gpt-5.4-mini")
+    try:
+        raw = await chat.send_message(UserMessage(text=prompt))
+        txt = raw if isinstance(raw, str) else str(raw)
+        txt = txt[txt.find("{"): txt.rfind("}") + 1]
+        data = _json.loads(txt)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"تعذّر توليد الاقتراحات: {e}")
+    out = []
+    for s in (data.get("suggestions") or []):
+        slug = _re.sub(r"[^a-z0-9-]", "", str(s).lower().strip())
+        if slug and slug not in out:
+            out.append(slug)
+    if not out:
+        raise HTTPException(status_code=502, detail="لم يتم توليد اقتراحات")
+    return {"suggestions": out[:5]}

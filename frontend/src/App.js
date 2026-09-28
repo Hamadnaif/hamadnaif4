@@ -23,6 +23,7 @@ import Reset from "@/pages/auth/Reset";
 
 import DashboardLayout from "@/pages/dashboard/DashboardLayout";
 import Sites from "@/pages/dashboard/Sites";
+import StartWizard from "@/pages/dashboard/StartWizard";
 import Billing from "@/pages/dashboard/Billing";
 import Domains from "@/pages/dashboard/Domains";
 import StoreOrders from "@/pages/dashboard/StoreOrders";
@@ -70,6 +71,7 @@ function AppRouter() {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<Sites />} />
+          <Route path="/dashboard/start" element={<StartWizard />} />
           <Route path="/dashboard/orders" element={<StoreOrders />} />
           <Route path="/dashboard/billing" element={<Billing />} />
           <Route path="/dashboard/domains" element={<Domains />} />
