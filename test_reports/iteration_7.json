@@ -1,0 +1,27 @@
+{
+  "summary": "Iteration-7 focused regression on the new منصتي RTL brand identity (navy #071D32 / blue #2563EB / pale #F4F7FC, tagline «فكرتك تبدأ بموقع», logo /brand/logo.webp + light variant). Both backend and frontend PASS all rebrand criteria. Backend: /api/public/settings returns new palette + logo_url + brand_identity_version=1 + font=Tajawal; /brand/logo.webp and /brand/logo-light.webp serve valid image/webp; /brand/icon.png returns a valid PNG (89 50 4E 47 signature); /api/public/templates returns 30 templates with 8+ distinct primary colors and zero templates share the platform navy — proving template palettes were NOT overwritten by the migration. Existing pytest suite (Public/Auth/Health) still fully green. Frontend: Home renders new horizontal logo (no duplicate wordmark, naturalWidth=1725), hero title = «فكرتك تبدأ بموقع», hero-illustration loads (naturalWidth=544), pale background applied, blue CTA present, footer uses /brand/logo-light.webp on navy shell. Zero horizontal overflow on desktop 1920, mobile 390, mobile 360 and on /contact /about /domains /pricing /templates. Mobile menu opens and mobile-nav-templates is reachable. FAQ chevrons work (retested with scroll_into_view). Pricing monthly/yearly toggle works. Templates catalog shows 30 cards; live-preview overlay opens, its inner canvas exposes --brand-primary=#0A2540 = the API brand.colors.primary for that template (independence proven at render layer), and preview-close-btn dismisses cleanly. Admin login (hamad6668@gmail.com) succeeds → /admin sidebar shows admin-brand-logo (light variant, nw=1725), Admin > Settings shows settings-logo-url='/brand/logo.webp', settings-color-primary='#071d32', settings-color-secondary='#2563eb'. Auth shell renders auth-desktop-brand light logo. Customer login (TEST_wiz_4aab11a9) succeeds → dashboard-brand-logo (dark, nw=1725) rendered with tagline; opening the existing site editor renders editor-brand-logo (nw=1725) on 1920 viewport AND the customer's own site brand from API is preserved (primary #0B3A53, secondary #0F6D7A, accent #F4B942) — the platform navy did NOT overwrite customer site brand. No runtime/pageerror console exceptions observed during any flow (the 401s are the expected /auth/me pings for unauthenticated marketing pages).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_brand_identity.py",
+    "/app/backend/tests/test_manasati_backend.py",
+    "/app/test_reports/pytest/iter7_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "BrandLogo.jsx renders a fixed 1725x560 img; on very small viewports the intrinsic width is fine because the CSS scales it, but consider adding loading='lazy' + fetchpriority='high' hint for the navbar copy to avoid a small LCP regression on slow 3G.",
+    "Favicon href in public/index.html points to /brand/icon.png (200 image/png). Consider also updating <meta name='theme-color'> to the new navy #071D32 if not already, for a coherent PWA/browser chrome tint.",
+    "seed.py DEFAULT_SETTINGS + one-time identity migration path is correctly scoped to logo/colors/font/version and does not touch sites/templates/integrations — verified by API (30 templates keep their diverse primaries, no navy override).",
+    "Templates.jsx live-preview canvas correctly scopes brand CSS variables to the preview subtree — palette leakage between the marketing platform shell and per-template preview does NOT occur (verified by DOM getComputedStyle inside data-testid='preview-canvas')."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_brand_identity.py (new)"
+  ],
+  "success_rate": {"backend": "100% (21/21 relevant tests, incl. 5 new brand identity tests)", "frontend": "100% on rebrand acceptance criteria (navbar logo, hero tagline, hero illustration, footer light logo, mobile menu, no overflow at 1920/390/360, pricing toggles, 30 template cards, live preview palette independence + close, auth shell brand, admin login+sidebar+settings values, customer login+sidebar, editor brand logo, customer site brand preserved)"},
+  "test_credentials": "Admin: hamad6668@gmail.com / Manasati@2026 (verified). Customer: TEST_wiz_4aab11a9@example.com / Passw0rd!123 (verified; free-plan lifetime quota already consumed — read-only regression only, as documented).",
+  "seed_data_creation": "No new sites/orders/contacts created for this iteration beyond the transient session fixtures in the untouched existing pytest suite. No customer site content was modified.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Rebrand is fully in place and non-destructive. New pytest file /app/backend/tests/test_brand_identity.py covers palette/logo/version + template independence; keep it as regression. Payment (NeoLeap/Moyasar) and ResellerClub remain intentionally disabled and their friendly-error UI paths are untouched. Wizard iteration_6 UX cap-toast gap is still open and out of scope for this rebrand run.",
+  "rca of the issue": "n/a — no bugs identified in this iteration."
+}

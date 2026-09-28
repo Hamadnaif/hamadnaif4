@@ -6,7 +6,8 @@ Arabic RTL SaaS platform to build websites and sell domains, similar in concept 
 ## User Choices
 - Auth: BOTH JWT email/password AND Emergent-managed Google login.
 - Email: messages shown in dashboard now; Resend deferred.
-- Payment: Moyasar (deferred — disabled until merchant keys).
+- Payment: NeoLeap / Al Rajhi Tranportal replaces the earlier Moyasar path. Integration code exists but merchant/UAT settings are missing; no real payment has been verified.
+- Brand: retain «منصتي»; user supplied new logo/brand board and explicitly approved applying it: navy #071D32, blue #2563EB, pale #F4F7FC, tagline «فكرتك تبدأ بموقع».
 - Domain reseller: ResellerClub default (deferred — disabled until account/API keys).
 - Phase 1 first: full journey (create → edit → publish → admin), then subscriptions/payments/domains.
 
@@ -16,6 +17,17 @@ Arabic RTL SaaS platform to build websites and sell domains, similar in concept 
 - Auth: JWT httpOnly cookies (access/refresh) + Emergent Google session_token; roles customer/admin; bcrypt; brute-force lockout; admin seeded from env (never auto-granted).
 - Media: images stored base64 in Mongo, served via /api/media/{id} (max 5MB, type-validated).
 - AI: Emergent universal LLM key (OpenAI gpt-5.4-mini + Gemini 3.1 Pro) for Arabic content generation in editor.
+
+
+## Implemented — Supplied identity refresh (2026, iteration_7)
+- User request: «تصميم وهوية جديدة» with logo/brand board, followed by «الهوية الجديدة اضفها». Approved use of supplied marks, not generated replacements.
+- Shared `BrandLogo.jsx` uses bundled transparent horizontal logo plus light-on-dark variant, avoids duplicate text, and continues respecting future custom admin logo URLs. Static assets: `/frontend/public/brand/`; original downloaded copies archived in `/reference_assets/brand/`.
+- New `HomeHero.jsx`: pale blue/white composition, tagline «فكرتك تبدأ بموقع», real register/templates links, illustration cropped from the supplied brand board and explicitly labeled illustrative. Homepage supporting sections redesigned; removed old misleading partner strip and unsupported comparison/statistics.
+- Navbar, footer, AuthShell presentation, customer/admin desktop and mobile layouts, editor header, template header, pricing-toggle contrast, and browser icon/theme/title now follow the new identity. No auth/payment/domain logic changed.
+- `BrandContext.jsx` and CSS default navy #071D32, blue #2563EB; platform background #F4F7FC with Tajawal typography. TemplateTheme and customer color configs retain their own palette.
+- `seed.py` applies an idempotent, versioned platform-only identity update (`brand_identity_version=1`) for logo/colors/font; future admin changes are not overwritten. Existing name/contact/legal/integration flags and customer sites are untouched by this migration.
+- Verification: production frontend build passed; one desktop smoke screenshot; testing-agent `/test_reports/iteration_7.json`: 21/21 relevant backend tests and rebrand UI acceptance passed. Desktop 1920 and mobile 390/360, real logo/image loading, menu/navigation/FAQ, pricing toggle, template preview + scoped palette, existing admin/customer login, settings values, editor identity + preserved customer colors. No reported regressions. Added `/backend/tests/test_brand_identity.py`.
+- This regression does NOT establish NeoLeap payment readiness, real DNS/SSL/domain registration, or user acceptance of template quality. Those remain explicitly pending below.
 
 ## User Personas
 - Customer: small business owner/individual building & publishing a site.
@@ -32,9 +44,9 @@ Marketing site; auth (login/register/reset); customer dashboard (sites+status, d
 - [x] Verified by testing agent (iteration_5): backend 48/50 pass (2 = pre-existing pytest xdist ordering coupling, not a product bug), all QA frontend flows pass.
 
 ### Known external blockers (need user action)
-- ResellerClub returns 403: preview egress IP **34.16.56.64** must be whitelisted in the ResellerClub account (IP changes on deploy; re-whitelist prod egress IP after deploy). Only domain search/pricing is wired — registration/purchase not built/enabled.
+- ResellerClub returns 403 from the preview egress IP. User must whitelist the current outbound IP; do not reuse a historical IP after preview/deployment changes. Only search/pricing is wired — registration/purchase remains gated and unbuilt.
 - Contact phone +966500000000 is a placeholder — set a real number in Admin → Settings.
-- Moyasar keys not provided → electronic payment disabled.
+- NeoLeap merchant/UAT configuration is missing → real electronic payment disabled. Crypto/disabled-state checks from the previous session are not an end-to-end payment test.
 - Production domain + wildcard DNS + SSL not set up → real subdomain serving & custom-domain verification disabled.
 
 ## Implemented (earlier)
@@ -48,22 +60,27 @@ Marketing site; auth (login/register/reset); customer dashboard (sites+status, d
 - [x] Verified by testing agent: backend 31/31, frontend 100%.
 
 ## Backlog (prioritized)
-### P0 (needs external config/keys)
-- Moyasar payment: server-side verification, idempotent order refs, activate subscription on paid webhook.
+### P0 (external configuration / end-to-end verification)
+- NeoLeap UAT: merchant configuration via a secure settings channel; verify success/failure/cancel, callback authenticity, idempotency, and subscription activation only after confirmed payment. No live payment verified yet.
 - Platform root domain + wildcard DNS → real subdomain serving + custom-domain DNS verification + SSL.
-- ResellerClub API: real availability/register/renew, split check→reserve→pay→register.
+- ResellerClub: whitelist current egress, retest real availability/pricing in browser, then implement register/renew purchase lifecycle.
 
 ### P1
-- Resend email: contact notifications + password-reset emails.
+- Substantially differentiated, higher-quality template layouts; obtain user visual acceptance rather than increasing template count.
+- Real recipient verification of Resend contact/reset delivery; Google sign-in interactive verification.
 - Subscription lifecycle: renewal dates, cancel-renewal, expiry policy display.
-- Storage quota enforcement (media size vs plan storage_mb).
+- Storage quota enforcement (media size vs plan storage_mb); document media persistence.
+- Broad functional acceptance: plan/template continuity after signup, AI usage/error states, editor save/reopen/images/links/order, publish/update flows, access isolation, mobile/accessibility, contact delivery. Identity regression is not a substitute for these.
+- Smart Wizard: follow-up verification of post-iteration_6 free-limit feedback fix, without retesting full AI generation unnecessarily.
 
 ### P2
 - English locale (i18n) toggle.
-- More templates + section types (pricing table, team, CTA banners).
+- Additional template/section types only after validating existing quality.
 - CSRF double-submit hardening; reset brute-force count after unlock window.
+- GitHub save is still a user action via Save to GitHub; no agent commit/push performed.
 
 ## Next Tasks
-1. On user request: wire Moyasar (need merchant publishable/secret keys).
-2. Provide platform root domain + configure wildcard DNS for live subdomain serving.
-3. Provide ResellerClub reseller account + API credentials to enable domain sales.
+1. Await user visual acceptance of the supplied new identity (implemented and tested).
+2. On request: improve specific template layouts with user visual direction.
+3. On secure merchant configuration: verify NeoLeap UAT end-to-end.
+4. On provider/domain configuration: verify ResellerClub and real production domain routing.
