@@ -1,0 +1,30 @@
+{
+  "summary": "Iteration-6 frontend-only E2E of the Smart Wizard (/dashboard/start) — ALL required flows PASS. Registered fresh customer TEST_wiz_<uuid>@example.com; both dashboard entry points render after Sites API resolves: start-wizard-btn (header) AND empty-wizard-btn (empty state) — each navigates to /dashboard/start and mounts data-testid=start-wizard. Progress indicator shows all 4 labels (وصف نشاطك / المعاينة / النطاق / الإطلاق) and advances step badges correctly (green check on completed, brand-bg on active). STEP 1: filled wizard-prompt='مطعم مأكولات بحرية في جدة', clicked wizard-generate-btn — POST /api/ai/generate-template resolved in ~15s and advanced to STEP 2. STEP 2: wizard-preview renders SectionRenderer content (hero 'أشهى المأكولات البحرية الطازجة في جدة' etc.) with the AI-generated brand colors/theme; wizard-site-name shows 'مطعم اللؤلؤة البحرية'; wizard-regenerate-btn is present. Clicking wizard-to-domains-btn advances to STEP 3. STEP 3: wizard-free-subdomain visible & selected by default (yoursite.منصتي, 'مجاني' chip); wizard-domain-list rendered with 6 wizard-domain-<slug> buttons (lu2lua/bahria/jeddahsea/lu2lsea/marina2/…) each with 'غير مؤكد' chip + '45 SAR (تقديري)' price — matches EXPECTED behavior since ResellerClub is unwhitelisted. wizard-back-btn returns to step 1 preview. Selecting a paid suggestion shows the Arabic 'الشراء ... لاحقًا' note. FINISH: wizard-finish-btn called POST /api/sites/from-ai and navigated to /editor/6ab9e8a014d23dcaf682302a. LIFETIME CAP: revisited /dashboard/start with same customer, re-ran generate+domains+finish; backend responded 403 (visible in console) and the UI stayed on /dashboard/start — no navigation to /editor. Cap enforced. Note: 1 minor UX gap — no visible sonner toast surfaced on the 403 (toasts array empty in DOM at 6s) although apiError() should produce one; still functionally blocked but user gets no error feedback text on-screen. Design/RTL: layout renders correctly right-to-left, brand colors applied, step chevrons connect cleanly. No console/pageerror during wizard flow.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "StartWizard.finish()", "issue": "On 2nd site creation (free-plan lifetime cap 403), the toast does NOT visibly appear in the DOM within 6s — user sees the wizard freeze on step 3 with no error feedback. Likely toast fires but is immediately covered/dismissed OR apiError returns empty when detail is Arabic. Functionally the cap holds (no navigation), but UX-wise the user has no clue why nothing happened.", "selector": "[data-testid=wizard-finish-btn]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_6.json"],
+  "action_items": [
+    "Surface the free-plan 403 error toast reliably in StartWizard.finish — verify apiError(err.response?.data?.detail) actually produces a non-empty Arabic string for the /api/sites/from-ai 403; consider a fallback message like 'وصلت للحد الأقصى للباقة المجانية (موقع واحد). قم بالترقية لإنشاء مواقع إضافية.' so users understand why the wizard stalled.",
+    "(Optional) Also disable/hide wizard-finish-btn if the user already has an active site to avoid the dead-click experience — could pre-check via GET /api/sites on wizard mount and short-circuit."
+  ],
+  "critical_code_review_comments": [
+    "StartWizard.finish() sets creating=false only inside the catch. If the toast fails to render (e.g. apiError returns ''), the button stays disabled/spinner from a prior success path but here it correctly resets — verified in code. Still, add a 'finally' to guarantee reset.",
+    "loadDomains uses Promise.all so a single slow slug drags all others — consider Promise.allSettled with per-row streaming (already tolerates individual failures via the inner try/catch, so this is minor).",
+    "wizard-domain-<slug> keys use `d.slug` which is the raw AI-returned latin string — if the AI ever returns duplicate slugs the keys collide silently. Dedupe suggestions before setDomains.",
+    "The wizard fully re-generates on the 'أعد التوليد' button but does NOT clear the previously-loaded `domains` cache — if user regenerates then advances to step 3, they see OLD domain suggestions for the previous site name. Recommend: setDomains(null) inside generate() so domain list refreshes for the new AI name."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only run)", "frontend": "~95% (7/7 required wizard flows pass; 1 medium-priority UX gap on cap-error toast)"},
+  "test_credentials": "Registered TEST_wiz_4aab11a9@example.com / Passw0rd!123 (consumed free-plan site) and TEST_entry_<uuid>@example.com (fresh, no site created).",
+  "seed_data_creation": "1 draft site created via /api/sites/from-ai during the E2E run: id=6ab9e8a014d23dcaf682302a (owner TEST_wiz_4aab11a9@example.com). Safe to leave.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Wizard E2E is solid. Only follow-up is the missing/silent cap-error toast on wizard-finish-btn — reproduce by finishing 2 sites in a row with the same free-plan user; the 2nd click gets a backend 403 but no visible toast within 6s. Frontend base URL from REACT_APP_BACKEND_URL. ResellerClub unwhitelisted → domain suggestions always show 'غير مؤكد' + '(تقديري)' — that is the correct/expected UI per PRD, do NOT treat as a bug.",
+  "rca of the issue": "Silent cap-error: StartWizard.finish's catch calls toast.error(apiError(err.response?.data?.detail)) but if `detail` on the 403 payload is either missing or a non-string (list/dict), apiError likely returns an empty string, which sonner renders as an invisible toast. Fix: default to a hard-coded Arabic message when apiError returns falsy, e.g. `toast.error(apiError(err.response?.data?.detail) || 'لا يمكن إنشاء موقع جديد ضمن الباقة المجانية')`."
+}

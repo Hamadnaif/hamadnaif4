@@ -35,6 +35,7 @@ export default function StartWizard() {
   const [domainsLoading, setDomainsLoading] = useState(false);
   const [chosenDomain, setChosenDomain] = useState(null); // null = free subdomain
   const [creating, setCreating] = useState(false);
+  const [finishError, setFinishError] = useState("");
 
   const sections = gen?.config?.pages?.[0]?.sections || [];
   const colors = gen?.config?.brand?.colors;
@@ -75,6 +76,7 @@ export default function StartWizard() {
 
   const finish = async () => {
     setCreating(true);
+    setFinishError("");
     try {
       const { data } = await api.post("/sites/from-ai", { name: gen.name, config: gen.config });
       if (chosenDomain) {
@@ -82,7 +84,14 @@ export default function StartWizard() {
       }
       toast.success("تم إنشاء موقعك بنجاح");
       navigate(`/editor/${data.id}`);
-    } catch (err) { toast.error(apiError(err.response?.data?.detail)); setCreating(false); }
+    } catch (err) {
+      const msg = apiError(err.response?.data?.detail) || (err.response?.status === 403
+        ? "وصلت للحد الأقصى للباقة المجانية (موقع واحد). قم بالترقية لإنشاء مواقع إضافية."
+        : "تعذّر إنشاء الموقع، حاول مرة أخرى.");
+      setFinishError(msg);
+      toast.error(msg);
+      setCreating(false);
+    }
   };
 
   return (
@@ -196,6 +205,13 @@ export default function StartWizard() {
             )}
 
             {chosenDomain && <p className="text-center text-xs text-slate-400 mt-3">سنحفظ اختيارك، ويمكنك شراء النطاق لاحقًا بعد تفعيل الدفع. سيُنشأ موقعك الآن على النطاق الفرعي المجاني.</p>}
+
+            {finishError && (
+              <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm text-center" data-testid="wizard-finish-error">
+                {finishError}
+                <a href="/dashboard/billing" className="block mt-2 brand-accent-text font-bold">عرض الباقات والترقية ←</a>
+              </div>
+            )}
 
             <div className="flex items-center justify-center gap-3 mt-8">
               <Button variant="outline" onClick={() => setStep(1)} className="rounded-full" data-testid="wizard-back-btn"><ArrowRight className="w-4 h-4 me-1" /> رجوع</Button>
