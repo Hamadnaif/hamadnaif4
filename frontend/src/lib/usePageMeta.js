@@ -4,7 +4,7 @@ import { useEffect } from "react";
 export function usePageMeta(title, description, { noindex = false } = {}) {
   useEffect(() => {
     const brand = "منصتي";
-    if (title) document.title = `${title} · ${brand}`;
+    if (title) { document.title = `${title} · ${brand}`; window.__pageMetaSet = true; }
 
     const setMeta = (name, content, attr = "name") => {
       if (!content) return;

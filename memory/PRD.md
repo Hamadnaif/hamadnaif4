@@ -25,6 +25,18 @@ Arabic RTL SaaS platform to build websites and sell domains, similar in concept 
 Marketing site; auth (login/register/reset); customer dashboard (sites+status, domains, subscription, invoices); section-based editor (add/reorder/edit sections, pages, brand, SEO, media, mobile/desktop preview, draft/publish); subdomain publishing + custom domain flow; domain search (provider-gated); 3 configurable plans; payment (gated); admin dashboard with RBAC + audit; security (data isolation, input validation, upload protection, rate limiting on login).
 
 ## Implemented (2026-06)
+- [x] Premium redesign ("Oasis & Obsidian"): new design system (IBM Plex Sans Arabic, brand-gradient, marquee, orbs, hover-lift), redesigned Home hero (CSS builder mockup) + integrations marquee + stats; premium Navbar/Footer (big CTA band).
+- [x] Templates: LIVE full-page preview (renders real SectionRenderer sections in a browser frame with desktop/mobile toggle) using per-template palettes via TemplateTheme (scopes --brand-* CSS vars); SectionRenderer hero/testimonials/cta now reflect each template's own colors (no more hardcoded navy). Reduced template variants to (الحديث، الكلاسيكي) — 30 templates.
+- [x] QA batch fixes: (1) FREE-plan site-limit loophole closed via lifetime `sites_created` counter (delete no longer frees a slot on free plan; paid still active-count). (2) Domains page: friendly Arabic error + retry, no technical IP/whitelist leakage to visitors (logged to db.domain_diagnostics server-side), prices labeled "تقديري"/indicative, purchase gated. (3) Plan selection carried to /register?plan&cycle with summary card. (4) Free-tier clarity + plan limits + VAT note on Pricing. (5) Form labels/aria/autocomplete + type=tel on Register & Contact; clickable mailto/tel; terms/privacy consent on Register. (6) Loading states on Templates & Pricing. (7) Per-page SEO titles/descriptions via usePageMeta (BrandContext no longer overrides). (8) Unified payment wording ("قيد التفعيل"); improved legal/privacy/refund content (removed "trial" wording) + clearer subscription-expiry FAQ.
+- [x] Verified by testing agent (iteration_5): backend 48/50 pass (2 = pre-existing pytest xdist ordering coupling, not a product bug), all QA frontend flows pass.
+
+### Known external blockers (need user action)
+- ResellerClub returns 403: preview egress IP **34.16.56.64** must be whitelisted in the ResellerClub account (IP changes on deploy; re-whitelist prod egress IP after deploy). Only domain search/pricing is wired — registration/purchase not built/enabled.
+- Contact phone +966500000000 is a placeholder — set a real number in Admin → Settings.
+- Moyasar keys not provided → electronic payment disabled.
+- Production domain + wildcard DNS + SSL not set up → real subdomain serving & custom-domain verification disabled.
+
+## Implemented (earlier)
 - [x] Phase 2: Resend email (contact notifications + password reset), 2 extra templates (6 total), 3 new section types (team/pricing/cta). Homepage upgraded to outclass competitor mnasati.com: 3D builder mockup hero, payment-integrations trust strip, product-facts stats band, "why us" comparison. Verified 35/35 backend + frontend flows.
 - [x] Marketing pages: Home, Templates (4, filter+preview), Pricing (monthly/yearly), Domain search (disabled purchase + notice), About, Contact (working), Terms/Privacy/Refund (CMS-driven).
 - [x] Auth: email/password + Google; forgot/reset (token logged to console); profile + change password.

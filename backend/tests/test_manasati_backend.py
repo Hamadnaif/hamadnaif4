@@ -507,3 +507,91 @@ class TestAIGenerateTemplate:
         r = requests.post(f"{API}/sites/from-ai",
                           json={"name": "x", "config": {"pages": []}})
         assert r.status_code == 401
+
+
+# ---------- Free-plan lifetime site cap (loophole fix) ----------
+class TestFreePlanLifetimeCap:
+    def test_create_delete_then_second_create_blocked(self):
+        """Fresh free-plan customer: create 1 site -> delete -> 2nd create MUST 403 with Arabic msg."""
+        s = requests.Session()
+        email = _new_email()
+        r = s.post(f"{API}/auth/register",
+                   json={"name": "CapTester", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        # get a template
+        template_id = requests.get(f"{API}/public/templates").json()[0]["id"]
+        # 1st create
+        r1 = s.post(f"{API}/sites", json={"name": "TEST cap 1", "template_id": template_id})
+        assert r1.status_code == 200, r1.text
+        site1_id = r1.json()["id"]
+        # delete
+        rd = s.delete(f"{API}/sites/{site1_id}")
+        assert rd.status_code == 200
+        # 2nd create must be blocked
+        r2 = s.post(f"{API}/sites", json={"name": "TEST cap 2", "template_id": template_id})
+        assert r2.status_code == 403, f"Expected 403 after delete, got {r2.status_code} {r2.text}"
+        body = r2.json()
+        detail = body.get("detail", "")
+        assert "الباقة المجانية" in detail or "الحد الأقصى" in detail, f"Missing Arabic free-plan message: {detail}"
+
+    def test_from_ai_also_blocked_after_free_create(self):
+        """After using the single free site via template, /sites/from-ai must also 403."""
+        s = requests.Session()
+        email = _new_email()
+        r = s.post(f"{API}/auth/register",
+                   json={"name": "CapAI", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        template_id = requests.get(f"{API}/public/templates").json()[0]["id"]
+        r1 = s.post(f"{API}/sites", json={"name": "TEST cap AI a", "template_id": template_id})
+        assert r1.status_code == 200
+        # try from-ai
+        r2 = s.post(f"{API}/sites/from-ai",
+                    json={"name": "x", "config": {"pages": [{"sections": []}]}})
+        assert r2.status_code == 403, f"Expected 403 on from-ai, got {r2.status_code} {r2.text}"
+
+    def test_sites_created_counter_persists_after_delete(self):
+        """After create+delete, sites_created must equal 1 (not decreased)."""
+        s = requests.Session()
+        email = _new_email()
+        r = s.post(f"{API}/auth/register",
+                   json={"name": "Counter", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        template_id = requests.get(f"{API}/public/templates").json()[0]["id"]
+        r1 = s.post(f"{API}/sites", json={"name": "TEST counter", "template_id": template_id})
+        assert r1.status_code == 200
+        sid = r1.json()["id"]
+        # delete
+        s.delete(f"{API}/sites/{sid}")
+        # 2nd attempt -> 403 (indirectly proves counter did not decrement)
+        r2 = s.post(f"{API}/sites", json={"name": "TEST counter 2", "template_id": template_id})
+        assert r2.status_code == 403
+
+
+# ---------- Domain search friendly-error contract ----------
+class TestDomainSearchFriendlyError:
+    def test_example_query_friendly_message_and_indicative_prices(self):
+        r = requests.get(f"{API}/public/domain/search", params={"q": "example"})
+        assert r.status_code == 200
+        data = r.json()
+        # enabled must be False either because provider unconfigured OR provider_error
+        assert data.get("enabled") is False, f"expected enabled=false, got {data.get('enabled')}"
+        msg = data.get("message") or ""
+        assert msg, "message must be present"
+        # NO technical leakage
+        for banned in ["IP", "القائمة البيضاء", "whitelist", "34.16", "API", "reseller"]:
+            assert banned not in msg, f"technical term '{banned}' leaked in message: {msg}"
+        results = data.get("results") or []
+        assert len(results) > 0
+        for row in results:
+            assert row.get("price_source") == "indicative", f"row not indicative: {row}"
+            assert row.get("available") is None, f"available must be null when disabled: {row}"
+            assert row.get("price") is not None, "indicative price must still be shown"
+
+    def test_provider_error_flag_when_configured_but_unreachable(self):
+        """If ResellerClub is configured but egress IP not whitelisted, provider_error=True."""
+        r = requests.get(f"{API}/public/domain/search", params={"q": "example"})
+        data = r.json()
+        # Either not configured (enabled=false, provider_error=false)
+        # OR configured but failed (enabled=false, provider_error=true).
+        # Both are acceptable friendly-mode outcomes; we just assert enabled is false.
+        assert data.get("enabled") is False

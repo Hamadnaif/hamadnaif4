@@ -1,0 +1,40 @@
+{
+  "summary": "Iteration-5 QA batch verified end-to-end. Backend: 50 pytest tests total, 48 PASS. Added 5 new tests — 3 for the free-plan lifetime site-cap loophole (create->delete->create-2 must 403 for both /api/sites and /api/sites/from-ai; sites_created counter persists after delete) and 2 for the /api/public/domain/search 'example' friendly-error contract (enabled=false, results[].price_source='indicative', available=null, message contains no 'IP'/'القائمة البيضاء'/'reseller'/'34.16'/'API', indicative price still shown). All 5 new tests PASS. Frontend: /domains 'example' shows Arabic friendly banner, domain-retry-btn visible, 12/12 domain-buy-* buttons disabled, all rows show 'التوفر غير مؤكد' + '(تقديري)' price label. /pricing shows free-tier-note, VAT note ('غير شاملة ضريبة القيمة المضافة'), يوم/سنوي cycle toggle, and clicking plan-select-<id> with yearly active navigates to /register?plan=<id>&cycle=yearly. /register with those params renders register-plan-summary showing 'الباقة المختارة / البداية · سنوي / 290 SAR/سنة' (verified after 2.5s wait — needs the /public/plans fetch to resolve). /templates loads 30 cards, category chips work, template-preview-overlay opens with SectionRenderer, mobile/desktop toggle works, preview-close-btn dismisses. /contact has 4 <label>s, phone input type=tel, mailto: and tel: links present. Home hero/marquee does NOT claim payments/domains 'جاهزة'; FAQ payment answer contains 'قيد التفعيل' (index faq-2, verified in code + expanded panel). Meta description IS unique per page (Pricing/Contact/Templates all have distinct meta[name=description]).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "pytest xdist ordering", "issue": "TestStoreOrders in worker gw0 can 404 when TestSites.test_publish_and_public_render runs in worker gw1 because pytest.ini pins with --dist loadscope, splitting session fixtures across workers. Pre-existing (iteration-4 report said 45/45 — likely a lucky ordering). Both tests PASS individually and when the two classes land on the same worker. Not a product bug; a test-suite coupling. Fix idea: publish `created_site` explicitly inside TestStoreOrders setup instead of relying on TestSites having published it first."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "BrandContext.jsx", "issue": "Line 30 unconditionally sets document.title = `${platform_name} · أنشئ موقعك الإلكتروني` whenever /public/settings resolves, which OVERWRITES the per-page title set by usePageMeta. Result: every marketing page (/, /pricing, /contact, /templates, /domains, /register) ends up with the same title 'منصتي · أنشئ موقعك الإلكتروني'. Meta description is correctly per-page (usePageMeta uses setMeta helper for that, which BrandContext does not touch) — only <title> regresses. Verified: document.title on /pricing after 2.5s wait = 'منصتي · أنشئ موقعك الإلكتروني' instead of expected 'الباقات والأسعار · منصتي'.", "selector": "document.title / <title>", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_manasati_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Remove/guard the `document.title = ...` assignment in /app/frontend/src/context/BrandContext.jsx (line 30). Either delete that line entirely and let usePageMeta own the title, or only set it once (initial mount) as a fallback so page-level useEffects still win. This is the ONLY functional regression found this round; everything else in the QA list passes.",
+    "(Optional) Decouple TestStoreOrders from TestSites' session-scope publish under xdist loadscope — publish the site inside a class fixture inside TestStoreOrders so the pair no longer depends on cross-class worker ordering."
+  ],
+  "critical_code_review_comments": [
+    "BrandContext overrides per-page titles set by usePageMeta because both useEffects mutate document.title and BrandContext runs on every /public/settings refresh — classic ordering trap. Prefer letting usePageMeta be the single owner of document.title and have BrandContext only expose the platform_name via context, not mutate DOM head.",
+    "sites.create_site checks _at_site_limit() then inserts+_bump_created() as two operations. Not a real race today (single-user flow), but under concurrent double-submit a free user could squeak in 2 sites. Consider $inc + findAndModify guard.",
+    "public/domain_search leaks pricing rows even when enabled=false (that is intentional/indicative), but each row's `price_source='indicative'` is only set when NOT confirmed — good. However the `available` field is set to null only when the top-level `enabled` is False; if provider returns partial availability + still raises, code short-circuits to friendly path which is correct. Consider caching last-known-good pricing so indicative label matches real provider prices when they came back briefly.",
+    "usePageMeta never removes/reverts the meta[name=description] on unmount — subsequent SPA nav to a page that does NOT call usePageMeta will keep the previous page's description. Minor SEO leak; add cleanup or ensure every route sets it."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_manasati_backend.py"
+  ],
+  "success_rate": {"backend": "96% (48/50 — the 2 failures are xdist ordering, not product bugs)", "frontend": "88% (7/8 QA items pass; per-page <title> regression is the one miss)"},
+  "test_credentials": "Admin hamad6668@gmail.com / Manasati@2026. Free-plan cap tests register fresh TEST_<uuid>@example.com customers each run — all deterministic.",
+  "seed_data_creation": "Created several TEST_<uuid>@example.com customers with 1 draft site each (from cap tests + AI E2E); safe to leave.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "backend_test.py now has 50 tests across 12 classes. New: TestFreePlanLifetimeCap (3), TestDomainSearchFriendlyError (2). Frontend title regression is caused ONLY by BrandContext.jsx:30 — verify by grepping `document.title` in src/. usePageMeta itself is correct. The two failing pytest tests (TestStoreOrders.test_store_order_flow_and_isolation + test_store_order_empty_cart_rejected) are xdist worker split flakes; run `pytest backend/tests/test_manasati_backend.py::TestSites backend/tests/test_manasati_backend.py::TestStoreOrders` on a single worker (they PASS). ResellerClub still returns 403 (preview IP not whitelisted) — provider_error=true path is what QA expects; do not treat as a bug.",
+  "rca of the issue": "Per-page <title> not sticking: BrandContext.jsx (React context that fetches /public/settings on mount) contains `if (merged.platform_name) document.title = `${merged.platform_name} · أنشئ موقعك الإلكتروني`` on line 30. Because /public/settings resolves AFTER the child page's usePageMeta useEffect has already run, BrandContext's effect fires last and clobbers the per-page title. Only <title> is affected — meta[name=description] is set through a distinct setMeta helper that BrandContext does not touch, which is why descriptions correctly vary per page. Fix: delete the document.title assignment in BrandContext or gate it behind an initial-mount flag so it only sets the fallback when no page has claimed the title yet."
+}

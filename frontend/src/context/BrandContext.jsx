@@ -27,7 +27,8 @@ export function BrandProvider({ children }) {
       const merged = { ...DEFAULTS, ...data };
       setSettings(merged);
       applyColors(merged.colors);
-      if (merged.platform_name) document.title = `${merged.platform_name} · أنشئ موقعك الإلكتروني`;
+      // Only set a fallback title if a page (usePageMeta) hasn't claimed it.
+      if (merged.platform_name && !window.__pageMetaSet) document.title = `${merged.platform_name} · أنشئ موقعك الإلكتروني`;
     } catch { /* keep defaults */ }
   }, [applyColors]);
 
