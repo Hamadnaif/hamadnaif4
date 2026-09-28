@@ -30,7 +30,7 @@ export default function Navbar() {
           {logo ? (
             <img src={logo} alt={settings.platform_name} className="h-8 w-auto" />
           ) : (
-            <span className="w-9 h-9 rounded-xl brand-bg text-white grid place-items-center">
+            <span className="w-9 h-9 rounded-xl brand-gradient text-white grid place-items-center shadow-md">
               <Sparkles className="w-5 h-5" />
             </span>
           )}

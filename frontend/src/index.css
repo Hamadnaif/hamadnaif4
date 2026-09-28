@@ -10,16 +10,16 @@
 
 body {
   margin: 0;
-  font-family: "Cairo", sans-serif;
+  font-family: "IBM Plex Sans Arabic", "Cairo", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #fafafa;
+  background: #f6f7f9;
   color: #0f172a;
 }
 
 h1, h2, h3, h4, h5, .font-head {
-  font-family: "Tajawal", sans-serif;
-  letter-spacing: -0.01em;
+  font-family: "IBM Plex Sans Arabic", "Tajawal", sans-serif;
+  letter-spacing: -0.02em;
 }
 
 code {
@@ -31,23 +31,71 @@ code {
   color: #0a2540;
 }
 
+/* ---- brand utility classes (kept for backward compatibility) ---- */
 .brand-bg { background-color: var(--brand-primary); }
 .brand-text { color: var(--brand-primary); }
 .brand-accent-bg { background-color: var(--brand-accent); }
 .brand-accent-text { color: var(--brand-accent); }
 .gold-text { color: var(--brand-secondary); }
 
+.brand-gradient {
+  background: linear-gradient(140deg,
+    color-mix(in srgb, var(--brand-primary) 92%, black) 0%,
+    var(--brand-primary) 45%,
+    color-mix(in srgb, var(--brand-primary) 78%, var(--brand-accent)) 100%);
+}
+
+.gradient-gold {
+  background: linear-gradient(90deg, var(--brand-secondary), color-mix(in srgb, var(--brand-secondary) 45%, white));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ---- surfaces ---- */
 .glass {
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
+.glass-dark {
+  background: color-mix(in srgb, var(--brand-primary) 45%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
 
 .soft-shadow { box-shadow: 0 8px 30px rgb(0 0 0 / 0.06); }
-.soft-shadow-lg { box-shadow: 0 20px 60px rgb(10 37 64 / 0.12); }
+.soft-shadow-lg { box-shadow: 0 30px 80px rgb(10 37 64 / 0.16); }
+.premium-ring { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08), 0 40px 90px rgb(0 0 0 / 0.45); }
+
+.hover-lift { transition: transform .28s cubic-bezier(.23,1,.32,1), box-shadow .28s ease; }
+.hover-lift:hover { transform: translateY(-6px); box-shadow: 0 30px 70px rgb(10 37 64 / 0.14); }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ---- decorative ---- */
+.orb { position: absolute; border-radius: 9999px; filter: blur(60px); pointer-events: none; }
+.dotted-grid {
+  background-image: radial-gradient(rgba(255,255,255,0.14) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.dotted-grid-dark {
+  background-image: radial-gradient(rgba(10,37,64,0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ---- animations ---- */
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee-track { display: flex; width: max-content; animation: marquee 30s linear infinite; }
+[dir="rtl"] .marquee-track { animation-direction: reverse; }
+.marquee-track:hover { animation-play-state: paused; }
+
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+.floaty { animation: floaty 6.5s ease-in-out infinite; }
+
+@keyframes pulse-ring { 0% { opacity:.6; transform: scale(1);} 50%{opacity:.25; transform: scale(1.06);} 100%{opacity:.6; transform: scale(1);} }
+.pulse-ring { animation: pulse-ring 5s ease-in-out infinite; }
 
 @layer base {
   :root {

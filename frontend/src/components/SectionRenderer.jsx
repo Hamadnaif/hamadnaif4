@@ -17,12 +17,12 @@ function Hero({ d }) {
       {d.image && (
         <img src={mediaUrl(d.image)} alt="" className="absolute inset-0 w-full h-full object-cover" />
       )}
-      <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(10,37,64,0.55), rgba(10,37,64,0.8))" }} />
+      <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--brand-primary) 45%, transparent), color-mix(in srgb, var(--brand-primary) 88%, black 8%))" }} />
       <div className={`relative max-w-4xl mx-auto px-6 py-28 flex flex-col ${align} text-white`}>
         <h1 className="font-head text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-4">{d.title}</h1>
         {d.subtitle && <p className="text-lg sm:text-xl text-white/90 max-w-2xl mb-8">{d.subtitle}</p>}
         {d.button_text && (
-          <a href={d.button_link || "#"} className="inline-flex items-center rounded-full px-8 py-3 font-bold text-[#0A2540]" style={{ background: "var(--brand-secondary)" }}>
+          <a href={d.button_link || "#"} className="inline-flex items-center rounded-full px-8 py-3 font-bold shadow-lg hover:-translate-y-0.5 transition-transform" style={{ background: "var(--brand-secondary)", color: "color-mix(in srgb, var(--brand-primary) 88%, black)" }}>
             {d.button_text}
           </a>
         )}
@@ -95,7 +95,7 @@ function ImageBlock({ d }) {
 
 function Testimonials({ d }) {
   return (
-    <SectionWrap className="bg-[#0A2540] text-white">
+    <SectionWrap className="brand-bg text-white">
       <div className="max-w-6xl mx-auto">
         <h2 className="font-head text-3xl font-extrabold mb-10 text-center gold-text">{d.title}</h2>
         <div className="grid gap-6 md:grid-cols-2">
@@ -274,7 +274,7 @@ function CtaBlock({ d }) {
         <div className="absolute -bottom-20 -end-20 w-72 h-72 rounded-full" style={{ background: "radial-gradient(circle, rgba(212,175,55,0.3), transparent 70%)" }} />
         <h2 className="font-head text-3xl font-extrabold mb-3 relative">{d.title}</h2>
         {d.subtitle && <p className="text-white/80 mb-7 relative">{d.subtitle}</p>}
-        {d.button_text && <a href={d.button_link || "#"} className="relative inline-flex rounded-full px-9 py-3 font-bold text-[#0A2540]" style={{ background: "var(--brand-secondary)" }}>{d.button_text}</a>}
+        {d.button_text && <a href={d.button_link || "#"} className="relative inline-flex rounded-full px-9 py-3 font-bold hover:-translate-y-0.5 transition-transform" style={{ background: "var(--brand-secondary)", color: "color-mix(in srgb, var(--brand-primary) 88%, black)" }}>{d.button_text}</a>}
       </div>
     </section>
   );
