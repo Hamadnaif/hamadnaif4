@@ -1,10 +1,15 @@
 import os
 import httpx
+import logging
 
 API_KEY = os.environ.get("RESELLERCLUB_API_KEY")
 RESELLER_ID = os.environ.get("RESELLERCLUB_RESELLER_ID")
-ENV = os.environ.get("RESELLERCLUB_ENV", "test")
-BASE = "https://httpapi.com/api" if ENV == "live" else "https://test.httpapi.com/api"
+ENV = os.environ["RESELLERCLUB_ENV"]
+BASE = os.environ["RESELLERCLUB_BASE_URL"].rstrip("/")
+AVAILABILITY_BASE = os.environ["RESELLERCLUB_AVAILABILITY_URL"].rstrip("/")
+
+# ResellerClub authenticates in query parameters; httpx INFO includes the URL.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # indicative SAR prices until provider price API is wired
 PRICES = {"com": 45, "net": 55, "org": 50, "store": 90, "online": 70, "sa": 120,
@@ -24,14 +29,31 @@ def config_status() -> dict:
     }
 
 
+async def _get_provider_json(base: str, path: str, params) -> dict:
+    """Fetch read-only data without exposing credential-bearing URLs in errors."""
+    try:
+        async with httpx.AsyncClient(timeout=25) as client:
+            resp = await client.get(f"{base}/{path}", params=params)
+    except httpx.HTTPError:
+        raise RuntimeError("ResellerClub connection failed") from None
+    if resp.is_error:
+        raise RuntimeError(f"ResellerClub HTTP {resp.status_code}")
+    try:
+        data = resp.json()
+    except ValueError:
+        raise RuntimeError("ResellerClub returned an invalid response") from None
+    if not isinstance(data, dict):
+        raise RuntimeError("ResellerClub returned an unexpected response")
+    if data.get("status") == "ERROR" or data.get("error"):
+        raise RuntimeError("ResellerClub rejected the request")
+    return data
+
+
 async def get_pricing(tlds=None) -> dict:
     """Return reseller customer pricing per tld: {tld: {"register": float, "renew": float}}."""
     tlds = tlds or SUPPORTED_TLDS
     params = {"auth-userid": RESELLER_ID, "api-key": API_KEY}
-    async with httpx.AsyncClient(timeout=25) as client:
-        resp = await client.get(f"{BASE}/products/customer-price.json", params=params)
-    resp.raise_for_status()
-    data = resp.json()
+    data = await _get_provider_json(BASE, "products/customer-price.json", params)
     out = {}
     for t in tlds:
         entry = data.get(f"dom{t}") or data.get(t) or {}
@@ -48,19 +70,20 @@ async def get_pricing(tlds=None) -> dict:
 
 
 async def check_availability(sld: str, tlds=None) -> dict:
-    """Return {tld: available_bool} using ResellerClub domains/available.json."""
+    """Return confirmed availability or None when the provider cannot confirm."""
     tlds = tlds or SUPPORTED_TLDS
     params = [("auth-userid", RESELLER_ID), ("api-key", API_KEY), ("domain-name", sld)]
     for t in tlds:
         params.append(("tlds", t))
-    async with httpx.AsyncClient(timeout=20) as client:
-        resp = await client.get(f"{BASE}/domains/available.json", params=params)
-    resp.raise_for_status()
-    data = resp.json()
+    data = await _get_provider_json(AVAILABILITY_BASE, "domains/available.json", params)
     out = {}
     for t in tlds:
-        key = f"{sld}.{t}"
-        info = data.get(key) or {}
-        status = (info.get("status") or "").lower()
-        out[t] = status == "available"
+        info = data.get(f"{sld}.{t}") or {}
+        status = (info.get("status") or "").lower() if isinstance(info, dict) else ""
+        if status == "available":
+            out[t] = True
+        elif status in {"regthroughus", "regthroughothers"}:
+            out[t] = False
+        else:
+            out[t] = None
     return out
