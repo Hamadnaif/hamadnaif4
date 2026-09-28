@@ -20,6 +20,14 @@ Arabic RTL SaaS platform to build websites and sell domains, similar in concept 
 
 
 
+## Latest user priorities and contact update (2026, iteration_9)
+- User supplied public email jaberra72@gmail.com and phone 0544354420 and requested opening the platform on a purchased domain. Subsequently supplied **mansati.com** (preserve this exact spelling, not competitor mnasati.com). User emphasized urgency. Treat contacts as public details, not a request to replace the owner/admin login.
+- Updated preview platform settings and DEFAULT_SETTINGS; one-time contact_details_version=1 migration ensures existing DBs adopt the approved contact fields on next code rollout without resetting future admin edits. Footer now includes phone link alongside email; existing Contact page consumes the same settings.
+- Testing agent iteration_9 passed API contact values, correct mailto/tel links on Contact/footer, 390px no-overflow check, and read-only confirmation that ADMIN_EMAIL remains the original real owner. No user/site/payment data mutated and no email/SMS delivery claimed.
+- Domain investigation resolved a spelling mismatch: production is live/healthy at https://domainly-gulf.emergent.host. **menasti.com** and **www.menasti.com** are already bound and verified with active SSL; https://menasti.com serves the app. User wrote **mansati.com**, which is a DIFFERENT, unbound domain on GiantPanda nameservers pointing to Linode/parking IPs; HTTPS validation fails there. Ask which spelling they actually own/intend. If menasti.com is intended, no DNS changes are needed. If mansati.com is intended, add it via Deployment Panel → Domains; exact DNS targets are generated at add-time, never copy another domain's targets. Preserve MX. RCA: /app/deployer-agent-docs/RCA_e7330947-7e0c-40ae-930c-48f729ac087e.MD. Public contacts were verified in preview only; production contact propagation is not yet verified.
+- Recent integration requests still pending: user asked Emergent-managed Google login (existing integration must be reviewed, no auth code changed); ChatGPT AI models (existing OpenAI tools, expansion scope unanswered); PayPal (user will create account and return). PayPal planned defaults: alongside NeoLeap, platform subscription sandbox payments first; automatic renewal undecided. No PayPal integration implemented or credentials collected.
+
+
 ## ResellerClub key update and validation (2026, iteration_8)
 - User confirmed supplied credential belongs to ResellerClub. Updated preview `RESELLERCLUB_API_KEY` only; existing reseller ID/live mode/database/owner settings preserved. Real admin email was already correct; no authentication changes.
 - Integration playbook + official availability documentation used. Availability now uses configured `RESELLERCLUB_AVAILABILITY_URL`; pricing uses `RESELLERCLUB_BASE_URL`. Backend restarted after env updates. No secret values are stored in this document.
@@ -57,7 +65,7 @@ Marketing site; auth (login/register/reset); customer dashboard (sites+status, d
 ### Known external blockers (need user action)
 - ResellerClub read-only requests still return Cloudflare HTML HTTP 403 ('Request forbidden by administrative rules'). Latest verified preview egress: 34.16.56.64. Whitelist confirmation is pending; if configured and propagation has elapsed, ask provider support to investigate its protection rules using the error/IP. Do not claim that a separate Cloudflare whitelist is proven necessary or that credentials are valid: the blocked requests did not verify them. Real availability/pricing and registration/purchase remain unavailable.
 - Deployment inventory previously found no production deployment. A later user message reports an asynchronous deployment has started; completion/live URL/production secrets/egress have NOT been verified. Recheck production egress after completion instead of assuming preview IP.
-- Contact phone +966500000000 is a placeholder — set a real number in Admin → Settings.
+- Public contact details updated and verified in preview: jaberra72@gmail.com / 0544354420 (iteration_9). Owner/admin account remains hamad6668@gmail.com. Production site is live on menasti.com; awaiting user confirmation that this is the intended domain rather than the differently spelled mansati.com. Production contact propagation not verified.
 - NeoLeap merchant/UAT configuration is missing → real electronic payment disabled. Crypto/disabled-state checks from the previous session are not an end-to-end payment test.
 - Production domain + wildcard DNS + SSL not set up → real subdomain serving & custom-domain verification disabled.
 
