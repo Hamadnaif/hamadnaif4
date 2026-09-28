@@ -1,0 +1,58 @@
+{
+  "summary": "Closed iteration_12 coverage gaps by adding /app/backend/tests/test_tap_settlement.py — 39 new focused tests targeting the exact code paths flagged as missing (payment_orders.settle, _grant_subscription, validate_charge, routers.payments._start_charge, tap_service.is_configured, tap_webhook with real HMAC). Combined regression: 72/72 pass (33 test_tap_payments.py + 39 test_tap_settlement.py). Real SANDBOX hosted checkout on Tap was reached (checkout.tap.company/… for existing pending order chg_TS06A5820261546m2H02809260, 29 SAR test-mode), but automated card entry could NOT be completed — precise, observed blocker documented below. No REAL CAPTURED claimed. No app code changes. Only test files and pytest.ini were modified (added asyncio_default_test_loop_scope=module — required for pytest-asyncio 1.4 + motor across tests; not addopts).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_tap_settlement.py",
+    "/app/backend/tests/test_tap_payments.py",
+    "/app/test_reports/pytest/iter13_settle.xml",
+    "/app/test_reports/pytest/iter13_all.xml"
+  ],
+  "test_evidence": {
+    "settle_captured_end_to_end": "PASS — settle(order, canonical CAPTURED) writes user.plan_id/plan_cycle/subscription_status=active/subscription_payment_mode=test, renews_at ~ paid_at+30d, order.paid_at + fulfilled_at set, order.status='paid'.",
+    "settle_idempotent_same_captured_twice": "PASS — 2nd invocation does NOT extend subscription_renews_at nor rewrite subscription_payment_at (stable paid_at + $lte guard).",
+    "settle_crash_recovery_paid_at_no_fulfilled": "PASS — order pre-marked paid but fulfilled_at=None → settle retries _grant_subscription and completes.",
+    "settle_grant_exception_then_retry": "PASS — user deleted mid-flight → grant raises HTTP 409, order.paid_at set but fulfilled_at stays None; after restoring user, retry settle grants and marks fulfilled_at.",
+    "older_payment_cannot_override_newer_plan": "PASS — user already on newer plan with later subscription_payment_at → older CAPTURED settle does NOT overwrite plan_id/renews_at (filter subscription_payment_at:{$lte:paid_at}).",
+    "failed_status_after_captured_does_not_downgrade": "PASS — FAILED charge on fulfilled order leaves plan_id/subscription_status/order.fulfilled_at intact; order.status stays 'paid' (update filter paid_at:null).",
+    "pending_initiated_after_captured_does_not_downgrade": "PASS — INITIATED same-order after CAPTURED does not revert fulfilment.",
+    "validate_charge_full_binding": "PASS — mismatches on amount (incl. extra decimals like 19.91), currency, id, live_mode, object, metadata.order_id, metadata.plan_id, reference.order, reference.transaction all raise 409 and NO user entitlement written. Matching extra decimals (19.90 vs 19.9) accepted.",
+    "is_configured_variants": "PASS — sk_live_ prefix rejected; TAP_LIVE_ALLOWED variants ('true','True','TRUE','1','',None,'yes') all disable; missing/HTTP URL disables; sandbox env passes.",
+    "start_charge_concurrent_lock": "PASS — two asyncio.gather calls on same order: exactly one Tap create_charge invocation, second raises 409.",
+    "start_charge_reference_idempotent": "PASS — body sent to Tap has reference.idempotent == order.id == reference.order == reference.transaction; metadata.order_id/plan_id also equal order fields.",
+    "start_charge_lost_response_verification_required": "PASS — create_charge raising TapError leaves order.status='verification_required', payment_id=None, creation_started_at populated so retry can reuse SAME order.id as idempotent reference.",
+    "start_charge_23h_expiry_blocks": "PASS — creation_started_at=24h ago → _start_charge raises 409.",
+    "webhook_valid_signature_reference_mismatch_returns_409": "PASS via HTTP (test_valid_sig_reference_mismatch_returns_409_and_no_entitlement) — POSTed event carries valid HMAC computed with real sandbox secret; reference.order tampered → 409, user unchanged. Confirms tap_webhook validates POSTED event before retrieve_charge().",
+    "webhook_valid_signature_unknown_charge_404": "PASS — valid HMAC on charge id not present in db.orders → 404.",
+    "webhook_signature_verified_before_lookup": "PASS — bad hashstring → 400 without needing DB or Tap network."
+  },
+  "real_sandbox_hosted_checkout_attempt": {
+    "flow_reached": "Login as TEST_tap_real_6bde3a58@example.com → /dashboard/billing (existing pending order 6aba8bf07ba9c28bcba15253, 29 SAR) → متابعة الدفع → /checkout/... → click checkout-pay-btn → navigated to https://checkout.tap.company/?mode=page&token=… → Tap SDK loaded card iframe https://sdk.tap.company/v2/card/index.html?publicKey=pk_test_4vCrxIfd5tiWw7UcR9z0BhyO . Screenshot: /app/test_reports/tap_hosted_full.png shows the full Tap widget with the 29 SAR amount, wallet options and card fields.",
+    "observed_blocker_precise_step": "Filling #cardNumber inside the sdk.tap.company card iframe. Playwright resolved the element (id=cardNumber, name=card_input, type=tel) but the native <input> is `visibility: hidden` — Tap paints a custom masked overlay above it and captures keystrokes via its own SDK. `frame.wait_for_selector('#cardNumber')` therefore times out with the message: 'locator resolved to hidden <input value=\"\" dir=\"ltr\" type=\"tel\" id=\"cardNumber ...>'. Same pattern on date_input and cvv_input, and on the consent checkbox (MUI PrivateSwitchBase-input hidden behind SVG toggle). The 'إدفع الآن' button stays disabled until Tap's SDK internally validates its own fields, which never happens because Playwright cannot dispatch the SDK-signed events without Tap's approved JS integration.",
+    "not_a_speculative_csp_claim": "The console does show `The CSP directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy` and Apple Pay font warnings, but these are informational and would not by themselves stop card entry. The concrete stopper is Tap's PCI-DSS hidden-input pattern in the sandbox SDK, verified by DOM inspection (see console dump).",
+    "result_state": "Order remains status=pending_payment. No REAL CAPTURED can be claimed; automated real-card entry stops before Tap accepts the fields. Manual UAT with a real browser is the only way to complete this specific hosted-checkout submission end-to-end.",
+    "screenshots": ["/app/test_reports/tap_hosted_full.png", "/app/test_reports/tap_filled.png", "/app/test_reports/tap_after_pay.png"]
+  },
+  "action_items": [
+    "None functional — Tap settlement/idempotency/validation paths are fully covered by executable tests. Manual UAT with a real desktop browser + Tap official test card is the only remaining verification for end-to-end sandbox CAPTURED (documented blocker is expected PCI-DSS behaviour of Tap's checkout, not an app defect)."
+  ],
+  "critical_code_review_comments": [
+    "settle() correctly filters $set on subscription_payment_at:{$lte:paid_at} so older payment cannot override newer plan — verified by explicit test.",
+    "_start_charge's find_one_and_update lock with cutoff (60s) and $or on status is concurrency-safe — proven with asyncio.gather test.",
+    "validate_charge is dependent on Decimal(str(charge.amount)) == Decimal(str(order.amount)); numeric strings like '25.00abc' correctly raise InvalidOperation → matches=False → 409 (verified).",
+    "tap_service.is_configured hard-checks LIVE_ALLOWED == 'false' string — any typo variant ('true','1','yes','','TRUE',None) all correctly disable (verified with monkeypatch). Consider explicit boolean parse for future-proofing but current behaviour is safe.",
+    "tap_webhook validates POSTED event's HMAC BEFORE calling _retrieve — verified: bad hash → 400 with no DB or Tap network call.",
+    "PaymentOrder.status_response maps status 'paid' (recorded but not yet fulfilled) to UI 'pending'. Intentional; verified by settle_crash_recovery test flow."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_tap_settlement.py (new — 39 tests)",
+    "/app/backend/pytest.ini (added asyncio_default_test_loop_scope = module — required for pytest-asyncio 1.4 to share a module-scoped loop across async tests using shared motor client; does NOT touch addopts)"
+  ],
+  "success_rate": {"backend": "100% (72/72 across test_tap_payments.py + test_tap_settlement.py)", "frontend": "N/A — hosted-checkout card entry is a documented PCI-protected step that headless Playwright cannot forge; screenshot evidence of reaching Tap sandbox provided."},
+  "test_credentials": "Reused TEST_tap_real_6bde3a58@example.com (Passw0rd!123) from /app/memory/test_credentials.md for real-sandbox flow. Unit tests fabricate throwaway TEST_settle_* users/plans/orders and clean them up per test.",
+  "seed_data_creation": "Per-test throwaway TEST_settle_* users/plans/orders created and torn down in fixture. No shared/persistent testing accounts beyond what iteration_12 recorded.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run: `REACT_APP_BACKEND_URL=<preview_url> pytest /app/backend/tests/test_tap_payments.py /app/backend/tests/test_tap_settlement.py -v`. The settlement suite needs pytest.ini's `asyncio_default_test_loop_scope = module` because payment_orders.settle uses the module-imported motor `db` handle — each test rebinds a fresh AsyncIOMotorClient bound to the module loop (autouse fixture `_rebind_motor_to_current_loop`). Tap sandbox hosted checkout stops at sdk.tap.company card iframe #cardNumber being visibility:hidden; do NOT waste iterations attempting `force=True` type() — Tap SDK signs its own input state. The webhook signature tests use the real TAP_SECRET_KEY from backend/.env; if a next iteration rotates it, the two HTTP webhook tests auto-skip on non-sk_test_ prefix.",
+  "rca of the issue": "N/A — no functional defect. Only environmental notes: (a) pytest-asyncio 1.4 defaults async tests to function-scope loops, breaking shared motor clients across tests; fix = module loop scope. (b) Tap sandbox hosted checkout uses hidden card <input>s + SDK-driven overlay per PCI-DSS; automated card fill via generic frame.fill() is not possible without Tap's official JS SDK integration."
+}
