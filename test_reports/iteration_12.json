@@ -1,0 +1,31 @@
+{
+  "summary": "Tap-only payments preview integration verified. 33/33 backend pytest tests pass (config, subscribe idempotency & conflict, ownership isolation across payment-session/tap-start/tap-verify/order-status, webhook signature rejection/live-mode block, tap_service helpers, legacy routes absent). Frontend: Billing → Checkout → PaymentResult happy paths verified on desktop and mobile (0px overflow), Tap-only banner + monthly/yearly toggle + subscribe → order creation → hosted Tap redirect (checkout.tap.company reached) all work. SPOOF check confirmed: /payment/result?order=X&status=success does NOT display success — page shows 'بانتظار تأكيد Tap' (server canonical status is used, forged query ignored). No real Tap charge captured (hosted page loaded but no card submission attempted — per guidelines, no faked success).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_tap_payments.py",
+    "/app/test_reports/pytest/iter12_tap.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: legacy env keys MOYASAR_*/NEOLEAP_* still present in backend/.env — treated as PROTECTED_VARIABLES; can be pruned later if user consents.",
+    "OPTIONAL: run a fully-manual Tap sandbox card charge on hosted page once (Visa 4508750015741019, 01/39, CVV100) to end-to-end validate CAPTURED settlement + subscription grant — could not be done via headless Playwright due to Tap iframe/CSP protections; this is expected and covered by mocked settle/validate_charge tests."
+  ],
+  "critical_code_review_comments": [
+    "tap_service.is_configured hard-couples to TAP_LIVE_ALLOWED == 'false' (string). Safe today; consider explicit boolean parse to avoid a future .env typo re-enabling live silently.",
+    "payment_orders.status_response maps status 'paid' (payment recorded but not yet fulfilled) to UI 'pending' — intentional; UI copy 'جارٍ التفعيل' handles it correctly.",
+    "routers/payments._start_charge uses 60s lock window; concurrent identical clicks are safe. 23h retry window is documented. Good.",
+    "routers/payments.tap_webhook fetches canonical charge via _retrieve after posted signature verification — matches requirement 'verify hashstring on POSTED payload before canonical retrieval'.",
+    "account.subscribe rejects extra fields via ConfigDict(extra='forbid') — tampered amount payload correctly returns 422."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_tap_payments.py (new)",
+    "/app/memory/test_credentials.md (appended iteration 12 accounts)"
+  ],
+  "success_rate": {"backend": "100% (33/33 executed, 1 skipped by design when live-mode env unavailable)", "frontend": "100% for automated flows (real hosted-page card submission intentionally not automated)"},
+  "test_credentials": "See /app/memory/test_credentials.md — new TEST_tap_* sandbox users; owner admin untouched.",
+  "seed_data_creation": "Multiple TEST_tap_* customer accounts created via /api/auth/register during fixtures. Some pending Tap orders left in db.orders for owner isolation — all owned by throwaway TEST_ accounts.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Test file /app/backend/tests/test_tap_payments.py is the regression suite for Tap. It loads /app/backend/.env internally, so run with: REACT_APP_BACKEND_URL=<preview_url> pytest /app/backend/tests/test_tap_payments.py -v. Do NOT run the whole /app/backend/tests directory blindly — older tests may hit AI/ResellerClub. Frontend data-testids for payments: billing-page, billing-payment-mode, billing-monthly/yearly, billing-subscribe-{planId}, billing-order-pay/check-{orderId}, checkout-title/test-mode/amount/pay-btn/error/retry, payment-result-test-mode/status/message, payment-verify-again, settings-tap. Tap sandbox key is sk_test_...; TAP_LIVE_ALLOWED=false. Reaching Tap hosted checkout works; automating card entry on tap.company is blocked by CSP/iframes — verify by manual UAT if needed. SPOOF test (?status=success) is already covered by test flow above.",
+  "rca of the issue": "N/A — no functional defects found in the touched Tap-only scope."
+}
