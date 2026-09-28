@@ -1,0 +1,32 @@
+{
+  "summary": "Closed the last iteration_13 gap: valid signed webhook + canonical CAPTURED retrieved via in-process ASGI, plus the mismatched-canonical 409 case. Added 2 new tests in /app/backend/tests/test_tap_settlement.py::TestWebhookInProcessFakeSecret executing routers.payments.tap_webhook end-to-end using httpx.ASGITransport against /app/backend/server.py app. Used a FAKE monkeypatched tap_service.SECRET (sk_test_fake_<uuid>) and a monkeypatched payments_router._retrieve returning canonical CAPTURED. ZERO Tap / Reseller network calls. No production changes, no browser, no app code edits.",
+  "new_tests": [
+    {"name": "TestWebhookInProcessFakeSecret::test_valid_signed_webhook_settles_then_replay_is_idempotent", "result": "PASS"},
+    {"name": "TestWebhookInProcessFakeSecret::test_valid_signed_webhook_but_retrieved_mismatch_returns_409_no_entitlement", "result": "PASS"}
+  ],
+  "test_evidence": {
+    "test_valid_signed_webhook_settles_then_replay_is_idempotent": "POST /api/payments/tap/webhook via ASGITransport with valid HMAC signed by monkeypatched FAKE tap_service.SECRET; monkeypatched payments._retrieve returns _canonical_captured(order, pid). Response 200 {'received': True}. call_log confirms sig verified before retrieve. Post-conditions asserted: users.plan_id==order.plan_id, plan_cycle=='monthly', subscription_status=='active', subscription_payment_mode=='test', subscription_payment_order==order.id, renews_at-paid_at ~ 30d, orders.paid_at and orders.fulfilled_at set, orders.status='paid'. Replay of SAME signed event returns 200 and users.subscription_payment_at, subscription_renews_at, and orders.fulfilled_at/paid_at remain EXACTLY equal to first values (no extension).",
+    "test_valid_signed_webhook_but_retrieved_mismatch_returns_409_no_entitlement": "Same in-process transport, valid HMAC signed for a well-formed posted event matching the order; monkeypatched payments._retrieve returns canonical CAPTURED with mismatched amount (order.amount+5.0), currency ('USD'), and reference.order ('TAMPERED_REF'). Response 409. call_log == ['sig','retrieve','...'] with sig index < retrieve index (canonical fetch happened only AFTER signature validation). users has NO active subscription, plan_id unchanged, no subscription_payment_order for this order. orders.paid_at and orders.fulfilled_at remain None — settle()'s validate_charge raises before find_one_and_update claims paid_at."
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_tap_settlement.py",
+    "/app/test_reports/pytest/iter14_webhook_inprocess.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routers.payments.tap_webhook order-of-operations verified: valid_tap_hash(POSTED event) → live_mode + charge-id shape gate → orders lookup by payment_id → validate_charge(POSTED event) → _retrieve(charge_id) → settle(order, canonical) → settle re-runs validate_charge on canonical; canonical mismatch returns 409 without any user or order state change. This means an attacker who forges a matching posted event but is caught by a mismatched canonical retrieve gets NO entitlement, no paid_at, no fulfilled_at. Confirmed by this iteration's tests.",
+    "Replay resistance is provided end-to-end by settle()'s $set filter `paid_at:None` on the CAPTURED find_one_and_update plus _grant_subscription's `subscription_payment_at:{$lte: order.paid_at}` guard — a replay of the same signed event with same canonical CAPTURED produces bit-identical paid_at, renews_at and fulfilled_at (asserted here)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_tap_settlement.py (appended class TestWebhookInProcessFakeSecret with 2 tests, ~150 lines)"
+  ],
+  "success_rate": {"backend": "100% (2/2 new tests pass; suite total 74/74 remains green — not re-run in this iteration per scope)", "frontend": "N/A (skipped per request)"},
+  "test_credentials": "N/A — throwaway TEST_settle_* users/plans/orders created and cleaned up per test.",
+  "seed_data_creation": "None persisted. Each test creates and tears down its own user + plan + order under the module scenario/fixture pattern.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run only: `REACT_APP_BACKEND_URL=<preview_url> pytest /app/backend/tests/test_tap_settlement.py::TestWebhookInProcessFakeSecret -v`. httpx.ASGITransport is invoked without lifespan (run_seed is a no-op for this route); the route only touches motor db which is already rebound to the current loop by the autouse _rebind_motor_to_current_loop fixture. Both tap_service.valid_tap_hash and payments_router.tap_service.valid_tap_hash are monkeypatched to a tracked wrapper because payments.py imports `import tap_service` and calls `tap_service.valid_tap_hash(...)` — patching only tap_service is sufficient, but the second patch is a safety net if imports change. Do NOT repeat the full 72-test suite unless code changes; iteration_13 already covers those.",
+  "rca of the issue": "N/A — no defect. Prior iteration's HTTP webhook tests exercised only rejection paths (signature-mismatch, reference-mismatch, unknown charge). This iteration adds the two missing positive-path branches via in-process ASGI with a fake secret so the route's canonical-retrieve + settle branches are executed and asserted (idempotent success + canonical mismatch → 409)."
+}

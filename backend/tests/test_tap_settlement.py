@@ -561,3 +561,174 @@ class TestWebhookRealSignature:
         r = requests.post(f"{API}/payments/tap/webhook", json=payload,
                           headers={"hashstring": "0" * 64})
         assert r.status_code == 400
+
+
+# --------------------------- Iteration 14: In-process webhook w/ FAKE secret ---------------------------
+
+class TestWebhookInProcessFakeSecret:
+    """Exercise routers.payments.tap_webhook via ASGI in-process using a FAKE
+    monkeypatched TAP secret and a monkeypatched payments._retrieve returning
+    canonical CAPTURED. ZERO Tap/Reseller network calls."""
+
+    def _sign_with(self, secret, payload):
+        return hmac.new(secret.encode(), _canonical_material(payload).encode(),
+                        hashlib.sha256).hexdigest()
+
+    async def _asgi_post(self, path, json_body, headers):
+        from httpx import AsyncClient, ASGITransport
+        import server as _server_mod
+        transport = ASGITransport(app=_server_mod.app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            return await ac.post(path, json=json_body, headers=headers)
+
+    @pytest_asyncio.fixture(loop_scope="module")
+    async def isolated(self):
+        user_id, email = await _mk_user()
+        plan_id = await _mk_plan()
+        pid = f"chg_iso_{uuid.uuid4().hex[:12]}"
+        order = await _mk_order(user_id, plan_id, payment_id=pid)
+        yield {"user_id": user_id, "email": email, "plan_id": plan_id,
+               "order": order, "payment_id": pid}
+        await _cleanup_user(user_id)
+        await _cleanup_plan(plan_id)
+
+    @pytest.mark.asyncio
+    async def test_valid_signed_webhook_settles_then_replay_is_idempotent(self, isolated, monkeypatch):
+        fake_secret = "sk_test_fake_" + uuid.uuid4().hex
+        monkeypatch.setattr(tap_service, "SECRET", fake_secret)
+
+        order = isolated["order"]
+        pid = isolated["payment_id"]
+        payload = {
+            "object": "charge", "id": pid, "status": "CAPTURED",
+            "amount": order.amount, "currency": order.currency, "live_mode": False,
+            "reference": {"gateway": "gw_it14", "payment": "pm_it14",
+                          "order": order.id, "transaction": order.id},
+            "metadata": {"order_id": order.id, "plan_id": order.plan_id},
+            "transaction": {"created": "2026-01-15T10:00:00Z"},
+        }
+        sig = self._sign_with(fake_secret, payload)
+
+        call_log = []
+        real_valid = tap_service.valid_tap_hash
+
+        def _tracked_valid(p, s):
+            call_log.append("sig")
+            return real_valid(p, s)
+
+        monkeypatch.setattr(tap_service, "valid_tap_hash", _tracked_valid)
+        monkeypatch.setattr(payments_router.tap_service, "valid_tap_hash", _tracked_valid)
+
+        retrieve_calls = []
+
+        async def fake_retrieve(charge_id):
+            call_log.append("retrieve")
+            retrieve_calls.append(charge_id)
+            return _canonical_captured(order, pid)
+
+        monkeypatch.setattr(payments_router, "_retrieve", fake_retrieve)
+
+        r = await self._asgi_post("/api/payments/tap/webhook", payload, {"hashstring": sig})
+        assert r.status_code == 200, r.text
+        assert r.json() == {"received": True}
+        assert retrieve_calls == [pid]
+        assert call_log.index("sig") < call_log.index("retrieve"), call_log
+
+        # Entitlement written
+        user = await db.users.find_one({"_id": ObjectId(isolated["user_id"])})
+        assert user["plan_id"] == order.plan_id
+        assert user["plan_cycle"] == "monthly"
+        assert user["subscription_status"] == "active"
+        assert user["subscription_payment_mode"] == "test"
+        assert user["subscription_payment_order"] == order.id
+        first_paid_at = user["subscription_payment_at"]
+        first_renews = user["subscription_renews_at"]
+        paid_dt = datetime.fromisoformat(first_paid_at)
+        renews_dt = datetime.fromisoformat(first_renews)
+        assert timedelta(days=29) < (renews_dt - paid_dt) < timedelta(days=31)
+
+        odoc = await db.orders.find_one({"_id": to_oid(order.id)})
+        assert odoc["paid_at"] and odoc["fulfilled_at"]
+        assert odoc["status"] == "paid"
+        first_fulfilled_at = odoc["fulfilled_at"]
+
+        # Replay SAME signed event → identical paid_at/renews_at/fulfilled_at (no extension)
+        call_log.clear()
+        retrieve_calls.clear()
+        r2 = await self._asgi_post("/api/payments/tap/webhook", payload, {"hashstring": sig})
+        assert r2.status_code == 200, r2.text
+        assert retrieve_calls == [pid]
+        assert call_log.index("sig") < call_log.index("retrieve")
+
+        user2 = await db.users.find_one({"_id": ObjectId(isolated["user_id"])})
+        assert user2["subscription_payment_at"] == first_paid_at, "paid_at must remain stable on replay"
+        assert user2["subscription_renews_at"] == first_renews, "renews_at must NOT be extended on replay"
+
+        odoc2 = await db.orders.find_one({"_id": to_oid(order.id)})
+        assert odoc2["fulfilled_at"] == first_fulfilled_at, "fulfilled_at must be stable on replay"
+        assert odoc2["paid_at"] == odoc["paid_at"]
+
+    @pytest.mark.asyncio
+    async def test_valid_signed_webhook_but_retrieved_mismatch_returns_409_no_entitlement(self, monkeypatch):
+        fake_secret = "sk_test_fake_" + uuid.uuid4().hex
+        monkeypatch.setattr(tap_service, "SECRET", fake_secret)
+
+        user_id, email = await _mk_user()
+        plan_id = await _mk_plan()
+        pid = f"chg_iso_{uuid.uuid4().hex[:12]}"
+        order = await _mk_order(user_id, plan_id, payment_id=pid, amount=30.0, currency="SAR")
+        try:
+            # Posted event is well-formed and matches the order (posted-event validate_charge passes)
+            payload = {
+                "object": "charge", "id": pid, "status": "CAPTURED",
+                "amount": order.amount, "currency": order.currency, "live_mode": False,
+                "reference": {"gateway": "gw_it14b", "payment": "pm_it14b",
+                              "order": order.id, "transaction": order.id},
+                "metadata": {"order_id": order.id, "plan_id": order.plan_id},
+                "transaction": {"created": "2026-01-15T10:00:00Z"},
+            }
+            sig = self._sign_with(fake_secret, payload)
+
+            call_log = []
+            real_valid = tap_service.valid_tap_hash
+
+            def _tracked_valid(p, s):
+                call_log.append("sig")
+                return real_valid(p, s)
+
+            monkeypatch.setattr(tap_service, "valid_tap_hash", _tracked_valid)
+            monkeypatch.setattr(payments_router.tap_service, "valid_tap_hash", _tracked_valid)
+
+            async def mismatched_retrieve(charge_id):
+                call_log.append("retrieve")
+                # Canonical retrieved charge disagrees with order on amount+currency+reference
+                return {
+                    "object": "charge", "id": pid, "status": "CAPTURED",
+                    "amount": order.amount + 5.0, "currency": "USD", "live_mode": False,
+                    "reference": {"gateway": "gw_it14b", "payment": "pm_it14b",
+                                  "order": "TAMPERED_REF", "transaction": order.id},
+                    "metadata": {"order_id": order.id, "plan_id": order.plan_id},
+                    "transaction": {"created": "2026-01-15T10:00:00Z"},
+                }
+
+            monkeypatch.setattr(payments_router, "_retrieve", mismatched_retrieve)
+
+            r = await self._asgi_post("/api/payments/tap/webhook", payload, {"hashstring": sig})
+            assert r.status_code == 409, r.text
+            # Canonical fetch happened, and only AFTER signature validation
+            assert "sig" in call_log and "retrieve" in call_log, call_log
+            assert call_log.index("sig") < call_log.index("retrieve"), call_log
+
+            # No entitlement written
+            user = await db.users.find_one({"_id": ObjectId(user_id)})
+            assert user.get("subscription_status") != "active"
+            assert user.get("plan_id") != order.plan_id
+            assert "subscription_payment_at" not in user or user.get("subscription_payment_order") != order.id
+
+            # Order not marked paid/fulfilled (settle's validate_charge raises before find_one_and_update)
+            odoc = await db.orders.find_one({"_id": to_oid(order.id)})
+            assert not odoc.get("paid_at"), "settle must not claim paid_at on mismatched canonical charge"
+            assert not odoc.get("fulfilled_at")
+        finally:
+            await _cleanup_user(user_id)
+            await _cleanup_plan(plan_id)
