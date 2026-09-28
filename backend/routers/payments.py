@@ -1,116 +1,116 @@
-import os
+import json
 from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import RedirectResponse
+from pydantic import BaseModel, ConfigDict, Field
 from pymongo import ReturnDocument
 
 from db import db, to_oid
 from auth import get_current_user
-import neoleap_service
+from payment_orders import PaymentOrder, now, owned_order, require_enabled, settle, status_response, validate_charge
+import tap_service
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
 
-def _now():
-    return datetime.now(timezone.utc).isoformat()
+async def _retrieve(charge_id):
+    try:
+        return await tap_service.retrieve_charge(charge_id)
+    except tap_service.TapError as exc:
+        raise HTTPException(exc.status_code, str(exc)) from None
 
 
-def _frontend() -> str:
-    return os.environ.get("FRONTEND_URL", "").rstrip("/")
-
-
-async def _activate_subscription(order: dict):
-    days = 365 if order.get("cycle") == "yearly" else 30
-    renews = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
-    await db.users.update_one({"_id": to_oid(order["owner_id"])}, {"$set": {
-        "plan_id": order["plan_id"], "plan_cycle": order.get("cycle"),
-        "subscription_status": "active", "subscription_renews_at": renews,
-    }})
-
-
-async def _fulfill(order_ref: str, callback: dict) -> str:
-    """Verify the decrypted NeoLeap callback against the order and fulfill idempotently.
-    Returns 'success' | 'failed'."""
-    order = await db.orders.find_one({"_id": to_oid(order_ref)})
-    if not order:
-        return "failed"
-    amt_ok = abs(float(callback.get("amt") or 0) - float(order["amount"])) < 0.01
-    if not (callback.get("success") and amt_ok):
-        await db.orders.update_one({"_id": to_oid(order_ref), "status": {"$ne": "paid"}},
-                                   {"$set": {"status": "failed", "gateway_result": callback.get("result"), "updated_at": _now()}})
-        return "failed"
+async def _start_charge(order, user):
+    current = datetime.now(timezone.utc)
+    if order.creation_started_at and current - datetime.fromisoformat(order.creation_started_at) >= timedelta(hours=23):
+        raise HTTPException(409, "انتهت مهلة إعادة المحاولة الآمنة لهذا الطلب. راجع الدعم قبل إنشاء دفعة جديدة.")
+    cutoff = (current - timedelta(seconds=60)).isoformat()
     claimed = await db.orders.find_one_and_update(
-        {"_id": to_oid(order_ref), "status": {"$ne": "paid"}},
-        {"$set": {"status": "paid", "payment_id": callback.get("paymentId"),
-                  "gateway_ref": callback.get("ref"), "gateway_auth": callback.get("auth"),
-                  "paid_at": _now()}},
-        return_document=ReturnDocument.AFTER,
+        {"_id": to_oid(order.id), "payment_id": None, "$or": [
+            {"status": {"$in": ["pending_payment", "verification_required"]}},
+            {"status": "creating", "creation_locked_at": {"$lt": cutoff}},
+        ]},
+        {"$set": {"status": "creating", "creation_started_at": order.creation_started_at or now(),
+                  "creation_locked_at": now()}}, return_document=ReturnDocument.AFTER,
     )
-    if claimed is None:
-        return "success"  # already processed
-    if claimed.get("type") == "subscription":
-        await _activate_subscription(claimed)
-    return "success"
-
-
-@router.get("/neoleap/start/{order_id}")
-async def neoleap_start(order_id: str, user: dict = Depends(get_current_user)):
-    if not neoleap_service.is_configured():
-        raise HTTPException(status_code=503, detail="بوابة الدفع غير مفعّلة")
-    order = await db.orders.find_one({"_id": to_oid(order_id)})
-    if not order or order["owner_id"] != user["id"]:
-        raise HTTPException(status_code=404, detail="الطلب غير موجود")
-    if order.get("status") == "paid":
-        raise HTTPException(status_code=409, detail="تم دفع هذا الطلب مسبقًا")
-    base = _frontend()
-    callback = f"{base}/api/payments/neoleap/callback"
+    if not claimed:
+        raise HTTPException(409, "جارٍ تجهيز أو التحقق من نفس الطلب. انتظر قليلًا ثم أعد المحاولة.")
     try:
-        res = await neoleap_service.create_payment(
-            amount=order["amount"], track_id=order_id,
-            response_url=callback, error_url=callback,
-            udf={"udf1": order_id},
-        )
-    except Exception:
-        raise HTTPException(status_code=502, detail="تعذّر بدء الدفع مع بوابة NeoLeap، حاول مرة أخرى.")
-    await db.orders.update_one({"_id": to_oid(order_id)},
-                               {"$set": {"payment_id": res["payment_id"], "status": "redirect", "updated_at": _now()}})
-    return {"redirect_url": res["redirect_url"]}
+        charge = await tap_service.create_charge(order, user)
+        validate_charge(order.model_copy(update={"payment_id": charge["id"]}), charge)
+        url = tap_service.checkout_url(charge) if charge.get("status") == "INITIATED" else None
+        await db.orders.update_one({"_id": to_oid(order.id), "payment_id": None}, {"$set": {
+            "payment_id": charge["id"], "checkout_url": url, "status": "redirect", "updated_at": now(),
+        }})
+        return charge
+    except (tap_service.TapError, HTTPException) as exc:
+        await db.orders.update_one({"_id": to_oid(order.id), "payment_id": None},
+                                  {"$set": {"status": "verification_required", "updated_at": now()}})
+        if isinstance(exc, tap_service.TapError):
+            raise HTTPException(exc.status_code, str(exc)) from None
+        raise
 
 
-async def _handle_callback(request: Request):
-    form = {}
+@router.post("/tap/start/{order_id}")
+async def tap_start(order_id: str, user: dict = Depends(get_current_user)):
+    await require_enabled()
+    order = await owned_order(order_id, user["id"])
+    if order.fulfilled_at:
+        raise HTTPException(409, "تم دفع هذا الطلب مسبقًا.")
+    charge = await _retrieve(order.payment_id) if order.payment_id else await _start_charge(order, user)
+    order = await owned_order(order_id, user["id"])
+    result = await settle(order, charge)
+    if result["status"] == "paid":
+        return {"completed": True, "order_id": order.id, "mode": "test"}
+    if result["status"] in {"failed", "cancelled"}:
+        raise HTTPException(409, "لم تكتمل هذه الدفعة. يمكنك اختيار الباقة مجددًا لإنشاء طلب جديد.")
     try:
-        form = dict(await request.form())
-    except Exception:
-        form = {}
-    trandata = form.get("trandata") or request.query_params.get("trandata")
-    frontend = _frontend()
-    if not trandata:
-        return RedirectResponse(url=f"{frontend}/payment/result?status=failed", status_code=303)
+        url = tap_service.checkout_url(charge)
+    except tap_service.TapError as exc:
+        raise HTTPException(exc.status_code, str(exc)) from None
+    return {"redirect_url": url, "charge_id": charge["id"], "order_id": order.id, "mode": "test"}
+
+
+class VerifyBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tap_id: str = Field(pattern=r"^chg_[A-Za-z0-9_-]{1,160}$")
+
+
+@router.post("/tap/verify")
+async def tap_verify(body: VerifyBody, user: dict = Depends(get_current_user)):
+    doc = await db.orders.find_one({"payment_id": body.tap_id, "owner_id": user["id"], "provider": "tap"})
+    if not doc:
+        raise HTTPException(404, "عملية الدفع غير موجودة لهذا الحساب.")
+    order = PaymentOrder.from_mongo(doc)
+    return await settle(order, await _retrieve(body.tap_id))
+
+
+@router.post("/tap/webhook")
+async def tap_webhook(request: Request):
+    raw = await request.body()
+    if len(raw) > 65536:
+        raise HTTPException(413, "حجم الإشعار غير مسموح.")
     try:
-        parsed = neoleap_service.parse_callback(str(trandata))
-    except Exception:
-        return RedirectResponse(url=f"{frontend}/payment/result?status=failed", status_code=303)
-    order_ref = str(parsed.get("trackId") or "")
-    status = await _fulfill(order_ref, parsed)
-    return RedirectResponse(url=f"{frontend}/payment/result?order={order_ref}&status={status}", status_code=303)
-
-
-@router.post("/neoleap/callback")
-async def neoleap_callback(request: Request):
-    return await _handle_callback(request)
-
-
-@router.get("/neoleap/callback")
-async def neoleap_callback_get(request: Request):
-    return await _handle_callback(request)
+        event = json.loads(raw)
+    except (ValueError, UnicodeDecodeError):
+        raise HTTPException(400, "إشعار دفع غير صالح.") from None
+    # Authenticate the actual posted event before looking up or fetching any charge.
+    if not tap_service.valid_tap_hash(event, request.headers.get("hashstring")):
+        raise HTTPException(400, "توقيع إشعار الدفع غير صالح.")
+    if event.get("live_mode") is not False or not tap_service.valid_charge_id(event.get("id")):
+        raise HTTPException(400, "إشعار غير تابع للدفع التجريبي.")
+    doc = await db.orders.find_one({"payment_id": event["id"], "provider": "tap"})
+    if not doc:
+        raise HTTPException(404, "الطلب غير موجود.")
+    order = PaymentOrder.from_mongo(doc)
+    validate_charge(order, event)
+    await settle(order, await _retrieve(event["id"]))
+    return {"received": True}
 
 
 @router.get("/order-status/{order_id}")
 async def order_status(order_id: str, user: dict = Depends(get_current_user)):
-    order = await db.orders.find_one({"_id": to_oid(order_id)})
-    if not order or order["owner_id"] != user["id"]:
-        raise HTTPException(status_code=404, detail="الطلب غير موجود")
-    return {"status": order.get("status"), "amount": order.get("amount"),
-            "currency": order.get("currency", "SAR"), "plan_name": order.get("plan_name")}
+    order = await owned_order(order_id, user["id"])
+    if not order.payment_id:
+        return status_response(order)
+    return await settle(order, await _retrieve(order.payment_id))

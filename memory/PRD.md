@@ -6,7 +6,7 @@ Arabic RTL SaaS platform to build websites and sell domains, similar in concept 
 ## User Choices
 - Auth: BOTH JWT email/password AND Emergent-managed Google login.
 - Email: messages shown in dashboard now; Resend deferred.
-- Payment: NeoLeap / Al Rajhi Tranportal replaces the earlier Moyasar path. Integration code exists but merchant/UAT settings are missing; no real payment has been verified.
+- Payment: User explicitly chose **Tap Payments ONLY** («الغي البقية بس ابي تاب»), replacing active NeoLeap/Moyasar paths and cancelling the proposed PayPal addition. Implement hosted checkout for platform plan-period purchases in SANDBOX only; no recurring/live payments authorized. Implementation has NOT started: awaiting confirmation that the literal `Key` label in the provided credential is not part of the `sk_test_` token. ResellerClub is unrelated and must remain unchanged.
 - Brand: retain «منصتي»; user supplied new logo/brand board and explicitly approved applying it: navy #071D32, blue #2563EB, pale #F4F7FC, tagline «فكرتك تبدأ بموقع».
 - Domain reseller: ResellerClub. User confirmed a newly supplied API key belongs to this provider; saved securely in preview backend .env using existing RESELLERCLUB_API_KEY and reseller ID. Provider environment stays live; only read-only availability/pricing authorized. Upstream HTTP 403 still blocks validation.
 - Phase 1 first: full journey (create → edit → publish → admin), then subscriptions/payments/domains.
@@ -18,6 +18,15 @@ Arabic RTL SaaS platform to build websites and sell domains, similar in concept 
 - Media: images stored base64 in Mongo, served via /api/media/{id} (max 5MB, type-validated).
 - AI: Emergent universal LLM key (OpenAI gpt-5.4-mini + Gemini 3.1 Pro) for Arabic content generation in editor.
 
+
+
+## Latest ResellerClub credential replacement (2026, iteration_11)
+- User supplied a NEW replacement API CODE, then delegated environment choice («كما تريد»). Chosen goal: align preview and production; NEVER store the value in docs, source, reports or chat replies.
+- Authoritative production inventory: RESELLERCLUB_API_KEY exists and does NOT match the new candidate. Reseller-ID/env/base-URL/availability-URL secret NAMES all exist. Deployer made no changes; existing production key must be updated by user through the Secrets UI.
+- Updated ONLY preview backend .env RESELLERCLUB_API_KEY via dotenv.set_key, verified candidate equality privately and every other parsed env value unchanged. Restarted backend using supervisor. No provider queries, purchases, API redesign, production secret mutation or deployment performed.
+- Testing_agent `/app/test_reports/iteration_11.json`: configuration/runtime equality checks passed; 13/13 MOCKED adapter tests passed; preview health200. ZERO real ResellerClub requests. This does NOT validate actual new-key authentication or resolve the historical403.
+- Pending user step (must state exactly): Click on Re-publish -> Secrets Tab -> Click on 'View & edit' -> make changes to the key under its 'RESELLERCLUB_API_KEY' name -> then click on Save and Re-publish.
+- After user confirms save: re-check authoritative production match, without echoing key. Do not run availability loops, pricing probes, or purchases. At most one explicitly approved read-only provider verification after access/IP allowlisting confirmed. User pasted a general abuse policy, NOT evidence of an actual24h account block.
 
 
 ## Read-only code review requested (2026)

@@ -1,0 +1,32 @@
+{
+  "summary": "Offline-only backend verification after preview RESELLERCLUB_API_KEY replacement. Confirmed (a) backend/.env has non-empty RESELLERCLUB_API_KEY, (b) domain_provider module runtime API_KEY matches the .env value (verified by boolean/sha256 8-char digest comparison in-process; key itself never printed), (c) RESELLERCLUB_RESELLER_ID present and is_configured()==True, (d) all 13 mocked adapter regression tests in tests/test_domain_provider.py pass (status mapping + sanitized errors), (e) preview /api/ health responds 200 {'message':'Manasati API','status':'ok'} confirming supervisor restarted service. No live ResellerClub calls made; no /public/domain/search, pricing, purchase, registration, auth, browser, or external egress probes executed. No application or env files modified.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_domain_provider.py",
+    "/app/test_reports/pytest/iter11_domain_provider.xml"
+  ],
+  "action_items": [
+    "This offline test CANNOT prove real ResellerClub credential validity or that the production Secrets Tab holds the same key. User must Re-publish (Secrets Tab -> View & edit -> Save and Re-publish) so production RESELLERCLUB_API_KEY matches preview. Do NOT claim provider authentication works until a mocked-free live test succeeds (currently blocked by Cloudflare 403 and provider abuse policy — not attempted here)."
+  ],
+  "critical_code_review_comments": [
+    "domain_provider.py cleanly separates transport errors from provider errors and never echoes URL or credentials in RuntimeError messages — good. httpx logger pinned to WARNING to keep query-param secrets out of logs — good.",
+    "config_status() safely returns booleans only — good practice; keep it that way.",
+    "SUPPORTED_TLDS still hard-coded; consider env-driven list if TLD coverage will vary per env (non-blocking)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (13/13 mocked)", "frontend": "not tested (out of scope)"},
+  "test_credentials": "none used; upstream credentials treated as opaque and not read/printed",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Preview backend/.env RESELLERCLUB_API_KEY is non-empty and matches domain_provider runtime (sha256[:8] digest equality). Production Secrets Tab is authoritative and may still differ — a real /api/public/domain/search would prove real credential validity but must NOT be executed until user re-publishes AND user consents (ResellerClub abuse policy + Cloudflare 403 currently observed). Only tests/test_domain_provider.py was executed; tests/test_domain_search_live.py was intentionally NOT run.",
+  "rca of the issue": "N/A — no defect found in the scope tested. The still-open concern (production key drift between preview and production Secrets Tab) is a deployment/config workflow item, not a code bug. Mitigation: user performs Re-publish flow, then a follow-up minimal live availability test (single TLD, no retries) can validate end-to-end."
+}

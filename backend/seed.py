@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from db import db, serialize
+from db import db
 from auth import hash_password, verify_password
 import os
 
@@ -44,8 +44,11 @@ DEFAULT_SETTINGS = {
         "refund": "يمكنك طلب استرجاع قيمة اشتراكك خلال ١٤ يومًا من تاريخ الدفع إذا لم تستفد فعليًا من مزايا الباقة المدفوعة (أي لم تستخدم مزايا مدفوعة مثل ربط النطاق الخاص أو نشر مواقع تتجاوز حدود الباقة المجانية). لتقديم الطلب راسلنا عبر صفحة التواصل مع رقم عملية الدفع، وتُراجَع الطلبات خلال ٧ أيام عمل. رسوم تسجيل النطاقات أو تجديدها غير قابلة للاسترجاع بعد إتمامها لدى المزوّد. لا ينطبق الاسترجاع على الحسابات المجانية.",
         "contact": "يسعدنا تواصلك معنا لأي استفسار أو دعم فني. راسلنا عبر النموذج أدناه أو على بريد الدعم وسنرد في أقرب وقت.",
     },
+    "payment_provider": "tap",
+    "payment_mode": "test",
+    "payment_provider_version": 1,
     "integrations": {
-        "moyasar_enabled": False,
+        "tap_enabled": True,
         "domain_reseller_enabled": False,
         "domain_reseller_provider": "ResellerClub",
         "email_enabled": True,
@@ -246,6 +249,10 @@ async def run_seed():
     await db.sites.create_index("subdomain", unique=True, sparse=True)
     await db.sites.create_index("owner_id")
     await db.user_sessions.create_index("session_token")
+    await db.orders.create_index([("owner_id", 1), ("request_id", 1)], unique=True,
+        partialFilterExpression={"provider": "tap", "request_id": {"$type": "string"}}, name="tap_request_once")
+    await db.orders.create_index("payment_id", unique=True,
+        partialFilterExpression={"provider": "tap", "payment_id": {"$type": "string"}}, name="tap_charge_once")
 
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@example.com")
     admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
@@ -278,6 +285,13 @@ async def run_seed():
         {"_key": "platform", "contact_details_version": {"$ne": 1}},
         {"$set": {key: DEFAULT_SETTINGS[key] for key in
                   ("contact_email", "contact_phone", "contact_details_version")}},
+    )
+
+    await db.settings.update_one(
+        {"_key": "platform", "payment_provider_version": {"$ne": 1}},
+        {"$set": {"payment_provider": "tap", "payment_mode": "test", "payment_provider_version": 1,
+                  "integrations.tap_enabled": True},
+         "$unset": {"integrations.moyasar_enabled": "", "integrations.neoleap_enabled": "", "integrations.paypal_enabled": ""}},
     )
 
     if await db.plans.count_documents({}) == 0:

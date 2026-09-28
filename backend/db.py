@@ -1,4 +1,6 @@
 import os
+from typing import Annotated
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -32,3 +34,31 @@ def to_oid(value):
         return ObjectId(value)
     except Exception:
         return None
+
+
+# Typed boundary for new persisted documents; legacy serializers remain unchanged.
+
+
+def _object_id_text(value):
+    text = str(value)
+    if not ObjectId.is_valid(text):
+        raise ValueError("Invalid document identifier")
+    return text
+
+
+PyObjectId = Annotated[str, BeforeValidator(_object_id_text)]
+
+
+class BaseDocument(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    id: PyObjectId = Field(default_factory=lambda: str(ObjectId()), alias="_id")
+
+    @classmethod
+    def from_mongo(cls, document):
+        return cls.model_validate(document)
+
+    def to_mongo(self):
+        document = self.model_dump(mode="python", by_alias=True)
+        document["_id"] = ObjectId(self.id)
+        return document
+

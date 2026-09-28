@@ -74,7 +74,7 @@ export default function AdminSettings() {
 
         <TabsContent value="integrations">
           <div className="bg-white rounded-2xl border border-slate-200 soft-shadow p-6 max-w-xl space-y-3">
-            <label className="flex items-center justify-between"><span>تفعيل بوابة الدفع Moyasar</span><input type="checkbox" checked={!!s.integrations?.moyasar_enabled} onChange={(e) => setIntg("moyasar_enabled", e.target.checked)} data-testid="settings-moyasar" /></label>
+            <label className="flex items-center justify-between gap-3"><span>تفعيل Tap Payments — اختبار فقط</span><input type="checkbox" checked={!!s.integrations?.tap_enabled} onChange={(e) => setIntg("tap_enabled", e.target.checked)} data-testid="settings-tap" /></label>
             <label className="flex items-center justify-between"><span>تفعيل مزوّد النطاقات</span><input type="checkbox" checked={!!s.integrations?.domain_reseller_enabled} onChange={(e) => setIntg("domain_reseller_enabled", e.target.checked)} /></label>
             <Field label="مزوّد النطاقات"><input value={s.integrations?.domain_reseller_provider || ""} onChange={(e) => setIntg("domain_reseller_provider", e.target.value)} className={inputCls} /></Field>
             <p className="text-xs text-slate-400">ملاحظة: تفعيل التكامل هنا لا يفعّل الخدمة فعليًا حتى تُضاف المفاتيح السرية في متغيرات البيئة الآمنة على الخادم.</p>
