@@ -1,0 +1,35 @@
+{
+  "summary": "Iteration-4 testing of the premium redesign + live template preview + AI full-site generation. Backend: 45/45 pytest tests PASS (added TestAIGenerateTemplate with 4 tests — auth guard, empty-prompt 400, full E2E generate+persist, from-ai unauth). AI E2E call to POST /api/ai/generate-template with prompt 'مقهى مختص بالقهوة في الرياض' returned a valid schema (name + config.pages[0].sections with hero/services/text/faq/contact/footer) in ~7s; POST /api/sites/from-ai persisted it as a draft site with template_name='بالذكاء الاصطناعي' and a unique subdomain. Frontend: /templates page loads 30 template cards, category filter renders, LivePreview overlay opens with SectionRenderer inside a browser-chrome frame, desktop/mobile device toggles work (maxWidth 1180 / 400 via framer-motion layout), close button removes the overlay, 'استخدم هذا القالب' links to /register. Verified template-scoped brand colors ACTUALLY apply per-template — read `--brand-primary` from the TemplateTheme inner div for 4 templates: نشاط تجاري #0A2540, مطعم وكافيه #7C2D12, عقارات #1C1917, نادي رياضي #18181B (all distinct). Screenshot of the restaurant preview shows a warm brown/orange hero + amber button, clearly NOT the navy business palette — the previously reported 'everything looks navy' complaint is fixed. AI full-site flow via UI: registered fresh customer, opened create-site dialog, typed the coffee-shop prompt, clicked توليد, navigated to /editor/<id> with a fully generated Arabic site (hero 'مختصون في تقديم القهوة بروح الرياض', خدماتنا with 3 services, عن المقهى, FAQs, contact form + footer). Success toast 'تم إنشاء الموقع بالذكاء الاصطناعي' visible in editor.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Templates live preview", "issues": ["When measuring CSS vars in tests, note that the preview-canvas parent inherits the platform brand vars; only the inner TemplateTheme div carries the template-scoped --brand-primary. Consider forwarding the CSS vars onto data-testid='preview-canvas' too so debugging/inspection is easier — not a user-visible bug."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_manasati_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ai.generate_template does JSON parsing via txt[txt.find('{'): txt.rfind('}')+1] — brittle. If the LLM emits nested JSON with a trailing '}' after the top-level object it still slices correctly by luck, but consider using a strict JSON-mode call or try/except with re.search on the first balanced object. Also no length cap on prompt / sections — a malicious user could ask for 100 sections and store a giant doc.",
+    "sites.create_site_from_ai does NOT re-validate section types against the whitelist (hero|text|services|gallery|testimonials|team|pricing|cta|faq|contact|footer|store|logos|map). If the LLM hallucinates an unknown 'type', the site will be persisted and later rendered as a no-op. Add a server-side filter matching SectionRenderer's supported set.",
+    "TemplateTheme sets --brand-primary/secondary/accent only on ITS own div, so any element rendered OUTSIDE that wrapper (e.g. an accidental portal / tooltip using brand vars) falls back to the platform navy. Fine today, worth documenting.",
+    "Prior iterations' comments still stand (raw reset token in logs, contact-notification blocks store checkout, StoreOrderBody no price/qty validation, no pagination on /api/account/store-orders, PUT /admin/settings clobbers integrations sub-doc)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_manasati_backend.py"
+  ],
+  "success_rate": {"backend": "100% (45/45)", "frontend": "100% of tested flows (home, templates preview + brand colors, AI create-site E2E, editor load)"},
+  "test_credentials": "Admin hamad6668@gmail.com / Manasati@2026. Fresh AI-flow customer created during UI test (test_ai_1790563738@example.com / pass1234) — owns 1 AI-generated coffee-shop site.",
+  "seed_data_creation": "One AI-generated draft site 'مقهى مختص بالقهوة في الرياض' for test_ai_1790563738@example.com, plus TEST_* customers/sites from pytest run.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_manasati_backend.py now has 45 tests. AI generate-template E2E uses real EMERGENT_LLM_KEY (~7-15s latency). Do NOT test frontend brand colors by reading getComputedStyle on '[data-testid=preview-canvas]' — the vars live on canvas.firstElementChild (the TemplateTheme div). Publish flow / /s/{subdomain} rendering was not re-executed this iteration (already fully covered by iterations 1-3 + pytest test_publish_and_public_render); marketing Home visual regressions were sampled visually with no console errors beyond expected /auth/me 401 while logged-out.",
+  "rca of the issue": "No live issues found. Note: an initial UI-based CSS-var check appeared to show all templates as navy #0A2540 — that was a test-code bug (reading --brand-primary from the parent preview-canvas which inherits the platform's global brand vars from BrandContext) not a real regression. Reading from the actual TemplateTheme inner div confirmed each template correctly scopes its own primary/secondary/accent, and the restaurant preview screenshot visually confirms a brown/orange hero + amber CTA button clearly different from the navy business template."
+}

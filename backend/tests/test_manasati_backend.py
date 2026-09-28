@@ -463,3 +463,47 @@ class TestDisabledIntegrations:
         assert r.status_code == 200, r.text
         data = r.json()
         assert data.get("payment_enabled") is False, f"expected payment_enabled=false, got {data}"
+
+
+# ---------- AI template generation + from-ai (Phase-4) ----------
+class TestAIGenerateTemplate:
+    def test_generate_template_unauth(self):
+        r = requests.post(f"{API}/ai/generate-template", json={"prompt": "cafe"})
+        assert r.status_code == 401
+
+    def test_generate_template_empty_prompt(self, customer_session_2):
+        # empty prompt -> 400
+        r = customer_session_2.post(f"{API}/ai/generate-template", json={"prompt": "   "})
+        assert r.status_code == 400
+
+    def test_ai_full_site_creation_e2e(self):
+        # Fresh customer with 0 sites so plan limit doesn't block
+        s = requests.Session()
+        email = _new_email()
+        r = s.post(f"{API}/auth/register", json={"name": "AI Tester", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        # Generate template via AI (may take 10-30s)
+        r = s.post(f"{API}/ai/generate-template",
+                   json={"prompt": "مقهى مختص بالقهوة في الرياض"}, timeout=90)
+        assert r.status_code == 200, f"generate-template failed: {r.status_code} {r.text}"
+        gen = r.json()
+        assert "name" in gen and "config" in gen
+        assert isinstance(gen["config"], dict)
+        pages = gen["config"].get("pages") or []
+        assert len(pages) >= 1
+        assert len(pages[0].get("sections") or []) >= 1
+        # Create site from AI result
+        r2 = s.post(f"{API}/sites/from-ai",
+                    json={"name": gen["name"], "config": gen["config"]})
+        assert r2.status_code == 200, f"from-ai failed: {r2.status_code} {r2.text}"
+        site = r2.json()
+        assert site["status"] == "draft"
+        assert site["subdomain"]
+        assert site["template_name"] == "بالذكاء الاصطناعي"
+        assert "_id" not in site
+        assert len(site.get("pages") or []) >= 1
+
+    def test_from_ai_unauth(self):
+        r = requests.post(f"{API}/sites/from-ai",
+                          json={"name": "x", "config": {"pages": []}})
+        assert r.status_code == 401
