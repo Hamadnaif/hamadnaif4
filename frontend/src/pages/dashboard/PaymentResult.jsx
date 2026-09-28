@@ -11,15 +11,20 @@ export default function PaymentResult() {
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    const id = params.get("id");
-    if (!id) { setState("failed"); setMsg("لا يوجد معرّف دفعة"); return; }
-    api.get(`/payments/verify`, { params: { id } })
+    const order = params.get("order");
+    const status = params.get("status");
+    if (!order) {
+      setState(status === "success" ? "success" : "failed");
+      if (status !== "success") setMsg("لم يكتمل الدفع");
+      return;
+    }
+    // Confirm against the authoritative DB order status.
+    api.get(`/payments/order-status/${order}`)
       .then((r) => {
-        if (r.data.status === "fulfilled" || r.data.status === "already_processed") {
-          setState("success");
-        } else { setState("failed"); setMsg("لم يكتمل الدفع"); }
+        if (r.data.status === "paid") setState("success");
+        else { setState("failed"); setMsg("لم يكتمل الدفع أو تم إلغاؤه."); }
       })
-      .catch((err) => { setState("failed"); setMsg(apiError(err.response?.data?.detail) || "فشل التحقق من الدفع"); });
+      .catch((err) => { setState("failed"); setMsg(apiError(err.response?.data?.detail) || "تعذّر التحقق من الدفع"); });
   }, [params]);
 
   return (

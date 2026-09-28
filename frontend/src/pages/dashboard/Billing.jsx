@@ -60,7 +60,7 @@ export default function Billing() {
 
       <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800">
         <Info className="w-5 h-5 shrink-0 mt-0.5" />
-        <p className="text-sm">بوابة الدفع (Moyasar) لم تُربط بعد. الاشتراك الحقيقي معطّل حتى إضافة مفاتيح التاجر. الأسعار تجريبية وقابلة للتعديل.</p>
+        <p className="text-sm">بوابة الدفع (NeoLeap – مصرف الراجحي) لم تُربط بعد. الاشتراك الحقيقي معطّل حتى إضافة مفاتيح التاجر (Tranportal ID، كلمة المرور، Resource Key، IV). الأسعار تجريبية وقابلة للتعديل.</p>
       </div>
 
       <div>
