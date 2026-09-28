@@ -20,6 +20,15 @@ Arabic RTL SaaS platform to build websites and sell domains, similar in concept 
 
 
 
+## Latest fix — live/preview contact mismatch (2026, iteration_10)
+- User reported site differences, supplied preview URL, then confirmed «اللي ذكرت» refers to the identified old live contact details. Homepage visual identity matched in screenshots; API comparison proved live still had placeholder contacts.
+- Deployer RCA: preview and production have independent settings data; preview edits do not sync into production on redeploy. No DNS or branding rewrite needed.
+- Main used existing owner admin credentials privately to send one partial PUT to https://menasti.com/api/admin/settings for ONLY contact_email=jaberra72@gmail.com, contact_phone=0544354420, contact_details_version=1; HTTP200, then logged out. No user credentials/roles/sites/payment data changed, no redeploy triggered.
+- REQUIRED post-fix testing-agent report `/app/test_reports/iteration_10.json` confirms real live API and /contact on desktop/mobile390, proper mailto/tel, persistence on reload, corrected footer email, no old contact placeholders. Preview matches contact values.
+- Remaining visible difference: deployed footer does NOT render phone; preview Footer.jsx already implements it. Adding the footer phone live requires a separately authorized frontend publication; this is NOT claimed complete. Existing optional /auth/me 401 probes for guests are not JS crashes.
+- Earlier user code-quality request remains pending after this interruption: actual hardcoded admin test password confirmed in backend/tests/test_manasati_backend.py; no fixes applied yet. Read auth/email/AuthContext/BrandContext/Register/PublicSite/Billing + sanitized test file. Auth/email refactor playbook consulted and backend-authorization skill loaded. Must run real React hooks lint + Python undefined-name checks before assuming all reported findings are valid; preserve `is None`/strict boolean checks. User authorized best judgment/full confirmed fixes and explicitly requires testing_agent AFTER fixes. Do NOT claim those review findings resolved.
+
+
 ## Latest user priorities and contact update (2026, iteration_9)
 - User supplied public email jaberra72@gmail.com and phone 0544354420 and requested opening the platform on a purchased domain. Subsequently supplied **mansati.com** (preserve this exact spelling, not competitor mnasati.com). User emphasized urgency. Treat contacts as public details, not a request to replace the owner/admin login.
 - Updated preview platform settings and DEFAULT_SETTINGS; one-time contact_details_version=1 migration ensures existing DBs adopt the approved contact fields on next code rollout without resetting future admin edits. Footer now includes phone link alongside email; existing Contact page consumes the same settings.
@@ -65,7 +74,7 @@ Marketing site; auth (login/register/reset); customer dashboard (sites+status, d
 ### Known external blockers (need user action)
 - ResellerClub read-only requests still return Cloudflare HTML HTTP 403 ('Request forbidden by administrative rules'). Latest verified preview egress: 34.16.56.64. Whitelist confirmation is pending; if configured and propagation has elapsed, ask provider support to investigate its protection rules using the error/IP. Do not claim that a separate Cloudflare whitelist is proven necessary or that credentials are valid: the blocked requests did not verify them. Real availability/pricing and registration/purchase remain unavailable.
 - Deployment inventory previously found no production deployment. A later user message reports an asynchronous deployment has started; completion/live URL/production secrets/egress have NOT been verified. Recheck production egress after completion instead of assuming preview IP.
-- Public contact details updated and verified in preview: jaberra72@gmail.com / 0544354420 (iteration_9). Owner/admin account remains hamad6668@gmail.com. Production site is live on menasti.com; awaiting user confirmation that this is the intended domain rather than the differently spelled mansati.com. Production contact propagation not verified.
+- Public contact details are now verified in BOTH preview and production: jaberra72@gmail.com / 0544354420 (iteration_10, production /contact desktop/mobile + API). Updated production via authorized partial admin settings PUT, contact_details_version=1, preserving owner and other data. Production footer shows the corrected email; footer phone is present in preview code but absent in served production UI, pending frontend rollout. Owner/admin remains hamad6668@gmail.com.
 - NeoLeap merchant/UAT configuration is missing → real electronic payment disabled. Crypto/disabled-state checks from the previous session are not an end-to-end payment test.
 - Production domain + wildcard DNS + SSL not set up → real subdomain serving & custom-domain verification disabled.
 

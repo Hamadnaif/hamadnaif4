@@ -1,0 +1,76 @@
+{
+  "summary": "Verified production menasti.com public contact info now matches preview after main agent's authorized partial settings PUT. Both API and browser checks pass on production and preview; no old placeholders remain.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verification_results": {
+    "production_api_https://menasti.com/api/public/settings": {
+      "contact_email": "jaberra72@gmail.com",
+      "contact_phone": "0544354420",
+      "contact_details_version": 1,
+      "platform_name": "منصتي",
+      "logo_url": "/brand/logo.webp",
+      "colors": {"primary": "#071D32", "secondary": "#2563EB", "accent": "#2563EB"}
+    },
+    "preview_api_https://domainly-gulf.preview.emergentagent.com/api/public/settings": {
+      "contact_email": "jaberra72@gmail.com",
+      "contact_phone": "0544354420",
+      "contact_details_version": 1,
+      "platform_name": "منصتي",
+      "logo_url": "/brand/logo.webp"
+    },
+    "production_contact_page_desktop": {
+      "contact-email-link_text": "jaberra72@gmail.com",
+      "contact-email-link_href": "mailto:jaberra72@gmail.com",
+      "contact-phone-link_text": "0544354420",
+      "contact-phone-link_href": "tel:0544354420",
+      "footer-email_present": true,
+      "footer-email_text": "jaberra72@gmail.com",
+      "footer-phone_present": false,
+      "has_old_email_info@manasati.sa": false,
+      "has_old_phone_+966500000000": false,
+      "reload_persistence": "jaberra72@gmail.com"
+    },
+    "production_contact_page_mobile_390": {
+      "email": "jaberra72@gmail.com",
+      "phone": "0544354420"
+    },
+    "production_homepage_footer": {
+      "footer-email_present": true,
+      "footer-email_text": "jaberra72@gmail.com",
+      "footer-phone_present": false,
+      "has_old_email": false,
+      "has_old_phone": false,
+      "has_new_email": true,
+      "has_new_phone_in_body": false,
+      "note": "Home footer does not render phone number (footer-phone element not implemented in currently-served build). Phone still visible on /contact page. This matches request: 'Check footer-email and footer-phone if implemented in current served build; explicitly report whether both are present.'"
+    },
+    "preview_contact_page": {
+      "email": "jaberra72@gmail.com",
+      "phone": "0544354420",
+      "has_old_email": false,
+      "has_old_phone": false
+    },
+    "console_errors": "5x 401s observed (likely optional auth-gated resource probes on marketing page; unrelated to contact info change and non-blocking). No JS/pageerror errors introduced."
+  },
+  "test_report_links": [],
+  "action_items": [
+    "OPTIONAL: The served production build renders [data-testid=footer-email] but NOT [data-testid=footer-phone] in the site-wide Footer component. If product requires footer to display the phone, main agent should add footer-phone alongside footer-email in Footer.jsx and redeploy. Contact page itself shows both correctly.",
+    "OPTIONAL/UNRELATED: Investigate the marketing pages' 401 console warnings from auth-gated resource fetches for non-authenticated visitors (cosmetic, not caused by this settings change)."
+  ],
+  "critical_code_review_comments": [
+    "Root cause (as noted by deployer): production and preview use separate DB instances; redeploy does not sync data. Recommend either (a) making seeded/default contact info idempotent on backend boot when contact_details_version bumps, or (b) adding an ops runbook step to replay settings changes on production DB. Otherwise every preview-only settings edit will silently drift from production.",
+    "public_settings should ensure any newly-added fields have defaults so a partially-updated document does not leave stale keys behind. Current $set-only update in admin.update_settings is correct but relies on operator remembering to touch every environment."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100% (for the scoped contact-info verification)"},
+  "test_credentials": "N/A - only public GETs used, no login performed per request",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration 10 confirmed production menasti.com contact info fix (jaberra72@gmail.com / 0544354420) is live and persistent across reload, desktop, mobile 390px, /contact page and API. Preview matches. Only observation: footer-phone data-testid not present in served Footer build (footer-email is). No code changes made. Earlier code-quality/refactor items remain unimplemented and were not tested per request.",
+  "rca of the issue": "Production DB previously held stale default contact values (info@manasati.sa / +966500000000) because preview and production run on independent MongoDB stores; the preview-only admin settings update never propagated. Main agent performed a single authorized partial PUT to /api/admin/settings on production with contact_email, contact_phone, contact_details_version fields only. GET /api/public/settings on menasti.com now returns the corrected values, and the served Contact page + homepage footer-email reflect them with mailto:/tel: links intact and no old placeholders remaining. Mitigation: automate cross-environment settings replay or add idempotent seed-on-version-bump on backend startup."
+}
