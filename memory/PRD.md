@@ -20,6 +20,14 @@ Arabic RTL SaaS platform to build websites and sell domains, similar in concept 
 
 
 
+## Read-only code review requested (2026)
+- User explicitly requested review of deployed app. code_review_agent completed read-only review; no code/data/deployment changes made in this review turn. Exact deployed source revision was not established, so repo findings are not blanket claims about live image contents.
+- Confirmed source findings: Billing.jsx load failure is silently swallowed and leaves endless spinner; real admin credential literal remains at backend/tests/test_manasati_backend.py:23-24 (value never reported); Editor.jsx duplicate store/logos object keys at50/51 and duplicate switch cases306/312; client-submitted store totals/prices remain trusted in public.py order endpoint (data-integrity concern before real checkout).
+- Main independently ran explicit ESLint react-hooks/exhaustive-deps, rules-of-hooks, no-undef, no-dupe-keys and no-duplicate-case across frontend/src: ONLY four duplicate-key/case warnings in Editor; no hook/undefined errors. Pyflakes backend scan found no undefined names or parse errors. Alleged27 missing dependencies and6 undefined Python variables were not reproduced. Valid `is None`/strict boolean checks should not be blindly replaced.
+- Live difference previously verified by iteration_10: correct live contact page/email, but no footer-phone in served production UI despite preview implementation. Exact build parity remains a limitation; do not call it a proven image revision without platform evidence.
+- Review-only verdict: fixes recommended, not a deployment-readiness certification or security audit. Billing error/retry and store-total validation need regression coverage. External NeoLeap/ResellerClub blockers remain outside this code review. All future fixes require testing_agent verification per user instruction.
+
+
 ## Latest fix — live/preview contact mismatch (2026, iteration_10)
 - User reported site differences, supplied preview URL, then confirmed «اللي ذكرت» refers to the identified old live contact details. Homepage visual identity matched in screenshots; API comparison proved live still had placeholder contacts.
 - Deployer RCA: preview and production have independent settings data; preview edits do not sync into production on redeploy. No DNS or branding rewrite needed.
