@@ -9,11 +9,12 @@ export default function Billing() {
   const navigate = useNavigate();
   const [overview, setOverview] = useState(null);
   const [plans, setPlans] = useState([]);
-  const [cycle, setCycle] = useState("monthly");
+  const [cycle, setCycle] = useState(() => { try { return JSON.parse(localStorage.getItem("selected_plan"))?.cycle === "yearly" ? "yearly" : "monthly"; } catch { return "monthly"; } });
   const [subscribing, setSubscribing] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const requestIds = useRef({});
+  const [selectedPlan] = useState(() => { try { return JSON.parse(localStorage.getItem("selected_plan"))?.id; } catch { return null; } });
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -51,10 +52,11 @@ export default function Billing() {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <div className="text-2xl font-extrabold brand-text" data-testid="billing-current-plan">{currentPlan.name}</div>
-                <p className="text-slate-500 text-sm mt-1" data-testid="billing-subscription-status">الحالة: {overview.subscription_status === "active" ? "نشط" : "غير مفعّل"} · {overview.plan_cycle === "yearly" ? "سنوي" : "شهري"}{overview.subscription_payment_mode === "test" && " · اشتراك تجريبي"}</p>
+                <p className="text-slate-500 text-sm mt-1" data-testid="billing-subscription-status">الحالة: {overview.subscription_status === "active" ? "نشط" : overview.subscription_status === "expired" ? "منتهي" : "غير مفعّل"} · {overview.plan_cycle === "yearly" ? "سنوي" : "شهري"}{overview.subscription_payment_mode === "test" && " · اشتراك تجريبي"}</p>
                 {overview.subscription_renews_at && <p className="text-sm text-slate-500 mt-2" data-testid="billing-expiry">انتهاء الفترة: {new Date(overview.subscription_renews_at).toLocaleDateString("ar-SA")} — لا يوجد تجديد تلقائي</p>}
               </div>
-              <div className="text-end" data-testid="billing-current-price"><div className="text-3xl font-extrabold brand-text">{overview.plan_cycle === "yearly" ? currentPlan.price_yearly : currentPlan.price_monthly} <span className="text-sm text-slate-400">{currentPlan.currency}/{overview.plan_cycle === "yearly" ? "سنة" : "شهر"}</span></div></div>
+              <p className="text-sm text-slate-500">{overview.expiry_policy}</p>
+              <div className="text-end" data-testid="billing-current-price"><div className="text-3xl font-extrabold brand-text">{overview.paid_amount ?? (overview.plan_cycle === "yearly" ? currentPlan.price_yearly : currentPlan.price_monthly)} <span className="text-sm text-slate-400">{currentPlan.currency}/{overview.plan_cycle === "yearly" ? "سنة" : "شهر"}</span></div></div>
             </div>
           ) : (
             <div className="flex items-center gap-3 text-slate-600"><Info className="w-5 h-5 brand-accent-text" /> أنت على الباقة المجانية (موقع واحد). قم بالترقية لمزايا أكثر.</div>
@@ -81,9 +83,10 @@ export default function Billing() {
             return (
               <div key={p.id} className={`rounded-2xl p-6 bg-white border ${p.highlight ? "border-[var(--brand-accent)]" : "border-slate-200"} soft-shadow`} data-testid={`billing-plan-${p.id}`}>
                 <h3 className="font-head text-lg font-extrabold brand-text">{p.name}</h3>
+                {selectedPlan === p.id && <p className="text-sm text-blue-700 mt-1">الباقة التي اخترتها عند التسجيل</p>}
                 <div className="my-3"><span className="text-3xl font-extrabold brand-text">{cycle === "yearly" ? p.price_yearly : p.price_monthly}</span><span className="text-slate-400 text-sm"> {p.currency}/{cycle === "yearly" ? "سنة" : "شهر"}</span></div>
                 <ul className="space-y-2 mb-5 text-sm">
-                  {(p.features || []).slice(0, 4).map((f) => <li key={f} className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-4 h-4 text-green-500" /> {f}</li>)}
+                  {(p.features || []).slice(0, 4).map((f) => <li key={f} className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-4 h-4 text-green-500" /> {f === "صفحات غير محدودة" ? `حتى ${p.limits.pages} صفحة` : f}</li>)}
                 </ul>
                 <Button disabled={isCurrent || !!subscribing || !overview.payment?.enabled} onClick={() => subscribe(p.id)} className={`w-full rounded-full ${p.highlight ? "brand-accent-bg" : "brand-bg"} text-white`} data-testid={`billing-subscribe-${p.id}`}>
                   {subscribing === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : isCurrent ? "باقتك الحالية" : "اختيار"}

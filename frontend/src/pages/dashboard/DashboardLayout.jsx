@@ -6,6 +6,8 @@ import { LayoutGrid, CreditCard, Globe, User, LogOut, ExternalLink, ShoppingBag 
 const NAV = [
   { to: "/dashboard", label: "مواقعي", icon: LayoutGrid },
   { to: "/dashboard/orders", label: "طلبات المتجر", icon: ShoppingBag },
+  { to: "/dashboard/payouts", label: "التحويلات", icon: CreditCard },
+  { to: "/dashboard/payments", label: "مدفوعات المتجر", icon: CreditCard },
   { to: "/dashboard/billing", label: "الاشتراك والفواتير", icon: CreditCard },
   { to: "/dashboard/domains", label: "النطاقات", icon: Globe },
   { to: "/dashboard/profile", label: "الملف الشخصي", icon: User },
