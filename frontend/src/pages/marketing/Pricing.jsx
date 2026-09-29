@@ -50,13 +50,13 @@ export default function Pricing() {
                 <span className="text-slate-500"> {p.currency}/{cycle === "yearly" ? "سنة" : "شهر"}</span>
               </div>
               <ul className="space-y-3 mb-4">
-                {(p.features || []).map((f, i) => <li key={i} className="flex items-start gap-2 text-slate-700 text-sm"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> {f}</li>)}
+                {(p.features || []).map((f, i) => <li key={i} className="flex items-start gap-2 text-slate-700 text-sm"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> {f === "صفحات غير محدودة" ? `حتى ${p.limits.pages} صفحة` : f}</li>)}
                 {!p.limits?.custom_domain && <li className="flex items-start gap-2 text-slate-400 text-sm"><XCircle className="w-5 h-5 shrink-0" /> ربط نطاق خاص</li>}
               </ul>
               {p.limits && (
                 <div className="text-xs text-slate-500 border-t border-slate-100 pt-3 mb-6 space-y-1">
                   <div>عدد المواقع: <b className="brand-text">{p.limits.sites}</b></div>
-                  <div>عدد الصفحات: <b className="brand-text">{p.limits.pages >= 100 ? "غير محدود" : p.limits.pages}</b></div>
+                  <div>عدد الصفحات: <b className="brand-text">{p.limits.pages}</b></div>
                   <div>مساحة التخزين: <b className="brand-text">{Math.round((p.limits.storage_mb || 0) / 1024 * 10) / 10 >= 1 ? `${Math.round((p.limits.storage_mb) / 1024 * 10) / 10} GB` : `${p.limits.storage_mb} MB`}</b></div>
                 </div>
               )}
@@ -67,7 +67,7 @@ export default function Pricing() {
       )}
 
       <div className="max-w-3xl mx-auto mt-10 text-center text-slate-500 text-sm space-y-1">
-        <p className="flex items-center justify-center gap-2"><Info className="w-4 h-4" /> جميع الأسعار بالريال السعودي (SAR) وغير شاملة ضريبة القيمة المضافة (تُضاف عند إتمام الدفع).</p>
+        <p className="flex items-center justify-center gap-2"><Info className="w-4 h-4" /> الأسعار تجريبية بالريال السعودي (SAR). يظهر الإجمالي قبل الدفع؛ احتساب الضريبة لم يُفعّل بعد.</p>
         <p>الدفع الإلكتروني عبر بوابة محلية قيد التفعيل حاليًا؛ يمكنك إنشاء موقعك مجانًا الآن والترقية لاحقًا.</p>
       </div>
     </div>
