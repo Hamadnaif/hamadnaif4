@@ -39,8 +39,9 @@ def valid_charge_id(value):
     return isinstance(value, str) and bool(re.fullmatch(r"chg_[A-Za-z0-9_-]{1,160}", value))
 
 
-def valid_tap_hash(payload, signature):
-    if not SECRET or not isinstance(payload, dict) or not isinstance(signature, str):
+def valid_tap_hash(payload, signature, secret=None):
+    secret = secret if secret is not None else SECRET
+    if not secret or not isinstance(payload, dict) or not isinstance(signature, str):
         return False
     try:
         ref, transaction = payload.get("reference") or {}, payload.get("transaction") or {}
@@ -48,7 +49,7 @@ def valid_tap_hash(payload, signature):
                     f"x_currency{payload['currency']}x_gateway_reference{ref.get('gateway') or ''}"
                     f"x_payment_reference{ref.get('payment') or ''}x_status{payload['status']}"
                     f"x_created{transaction['created']}")
-        expected = hmac.new(SECRET.encode(), material.encode(), hashlib.sha256).hexdigest()
+        expected = hmac.new(secret.encode(), material.encode(), hashlib.sha256).hexdigest()
         return hmac.compare_digest(expected, signature.lower())
     except (KeyError, TypeError, ValueError, AttributeError, InvalidOperation):
         return False

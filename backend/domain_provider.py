@@ -4,9 +4,9 @@ import logging
 
 API_KEY = os.environ.get("RESELLERCLUB_API_KEY")
 RESELLER_ID = os.environ.get("RESELLERCLUB_RESELLER_ID")
-ENV = os.environ["RESELLERCLUB_ENV"]
-BASE = os.environ["RESELLERCLUB_BASE_URL"].rstrip("/")
-AVAILABILITY_BASE = os.environ["RESELLERCLUB_AVAILABILITY_URL"].rstrip("/")
+ENV = os.environ.get("RESELLERCLUB_ENV", "test")
+BASE = os.environ.get("RESELLERCLUB_BASE_URL", "https://test.httpapi.com/api").rstrip("/")
+AVAILABILITY_BASE = os.environ.get("RESELLERCLUB_AVAILABILITY_URL", BASE).rstrip("/")
 
 # ResellerClub authenticates in query parameters; httpx INFO includes the URL.
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -60,8 +60,8 @@ async def get_pricing(tlds=None) -> dict:
         try:
             add = entry.get("addnewdomain", {})
             renew = entry.get("renewdomain", {})
-            reg = float(next(iter(add.values()))) if add else None
-            ren = float(next(iter(renew.values()))) if renew else None
+            reg = float(add["1"]) if "1" in add else None
+            ren = float(renew["1"]) if "1" in renew else None
             if reg is not None:
                 out[t] = {"register": reg, "renew": ren or reg}
         except Exception:

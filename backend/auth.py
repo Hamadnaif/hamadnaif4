@@ -104,8 +104,10 @@ async def get_current_user(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="غير مصرح")
     if user.get("account_status") == "suspended":
         raise HTTPException(status_code=403, detail="تم إيقاف الحساب")
+    from subscriptions import subscription_state
     out = serialize(user)
     out.pop("password_hash", None)
+    out["subscription_status"] = subscription_state(out)
     return out
 
 
@@ -127,6 +129,7 @@ async def _check_lockout(identifier: str):
                 locked_until = locked_until.replace(tzinfo=timezone.utc)
             if locked_until > datetime.now(timezone.utc):
                 raise HTTPException(status_code=429, detail="محاولات كثيرة. حاول بعد 15 دقيقة")
+            await _clear_fails(identifier)
 
 
 async def _record_fail(identifier: str):
@@ -173,8 +176,10 @@ class PasswordChangeBody(BaseModel):
 
 
 def _public_user(user: dict) -> dict:
+    from subscriptions import subscription_state
     out = serialize(user)
     out.pop("password_hash", None)
+    out["subscription_status"] = subscription_state(out)
     return out
 
 
