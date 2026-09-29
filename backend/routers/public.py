@@ -2,8 +2,12 @@ import re
 import os
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, HTTPException, BackgroundTasks
+from pydantic import BaseModel, EmailStr, Field
+from uuid import UUID, uuid4
+from typing import Literal
+import secrets
+from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
 
 from db import db, serialize, to_oid
@@ -49,9 +53,11 @@ async def public_site(subdomain: str):
     site = await db.sites.find_one({"subdomain": subdomain})
     if not site or site.get("status") != "published":
         raise HTTPException(status_code=404, detail="الموقع غير متاح")
-    out = serialize(site)
-    # strip owner reference from public payload
-    out.pop("owner_id", None)
+    from publishing import published_content
+    out = published_content(site)
+    merchant = await db.merchant_accounts.find_one({"owner_id": site["owner_id"]})
+    import tap_commerce
+    out["online_payments"] = bool(tap_commerce.is_configured() and merchant and merchant.get("is_acceptance_allowed") is True)
     return out
 
 
@@ -98,45 +104,78 @@ async def platform_contact(body: ContactBody):
 
 
 class OrderItem(BaseModel):
-    name: str
-    price: float
-    qty: int
+    product_ref: str | None = None
+    name: str = Field(default="", max_length=200)
+    price: float | None = None  # Legacy clients; never trusted.
+    qty: int = Field(ge=1, le=100, strict=True)
 
 
 class StoreOrderBody(BaseModel):
-    customer_name: str
-    phone: str
-    address: str | None = None
-    note: str | None = None
-    items: list[OrderItem]
-    total: float
-    currency: str = "SAR"
+    customer_name: str = Field(min_length=2, max_length=100)
+    phone: str = Field(min_length=8, max_length=20)
+    email: EmailStr | None = None
+    address: str | None = Field(default=None, max_length=1000)
+    note: str | None = Field(default=None, max_length=2000)
+    items: list[OrderItem] = Field(min_length=1, max_length=100)
+    total: float | None = None  # Computed from the published catalog instead.
+    currency: Literal["SAR"] = "SAR"
+    payment_method: Literal["offline", "tap"] = "offline"
+    request_id: UUID = Field(default_factory=uuid4)
 
 
 @router.post("/site/{subdomain}/order")
-async def create_store_order(subdomain: str, body: StoreOrderBody):
-    site = await db.sites.find_one({"subdomain": subdomain})
-    if not site or site.get("status") != "published":
-        raise HTTPException(status_code=404, detail="الموقع غير متاح")
-    if not body.items:
-        raise HTTPException(status_code=400, detail="السلة فارغة")
-    order = {
-        "site_id": str(site["_id"]), "owner_id": site["owner_id"],
-        "site_name": site.get("name"), "customer_name": body.customer_name.strip(),
-        "phone": body.phone.strip(), "address": (body.address or "").strip(),
-        "note": (body.note or "").strip(),
-        "items": [i.model_dump() for i in body.items],
-        "total": body.total, "currency": body.currency,
-        "status": "new", "payment_status": "unpaid", "created_at": _now(),
-    }
-    res = await db.store_orders.insert_one(order)
-    owner = await db.users.find_one({"_id": to_oid(site["owner_id"])})
-    if owner and owner.get("email"):
-        lines = "، ".join([f"{i.name} ×{i.qty}" for i in body.items])
-        msg = f"طلب جديد من {body.customer_name} (هاتف {body.phone}). المنتجات: {lines}. الإجمالي: {body.total} {body.currency}. العنوان: {body.address or '-'}"
-        await send_contact_notification(owner["email"], f"طلب جديد على متجر «{site.get('name')}»",
-                                        body.customer_name.strip(), owner["email"], body.phone.strip(), msg)
-    return {"ok": True, "order_id": str(res.inserted_id),
+async def create_store_order(subdomain: str, body: StoreOrderBody, background_tasks: BackgroundTasks):
+    from store_catalog import price_cart
+    from routers.commerce import start_store_payment
+    import tap_commerce
+    import tap_service
+    site = await db.sites.find_one({"subdomain": subdomain, "status": "published"})
+    if not site:
+        raise HTTPException(404, "الموقع غير متاح")
+    items, total = price_cart(site, body.items)
+    owner_query = {"site_id": str(site["_id"]), "request_id": str(body.request_id)}
+    order = await db.store_orders.find_one(owner_query)
+    if order and (order["items"] != items or order.get("payment_method") != body.payment_method):
+        raise HTTPException(409, "تغيّرت السلة. أعد فتح صفحة المتجر لإنشاء طلب جديد.")
+    if body.payment_method == "tap":
+        merchant = await db.merchant_accounts.find_one({"owner_id": site["owner_id"]})
+        if not tap_commerce.is_configured() or not merchant or merchant.get("is_acceptance_allowed") is not True:
+            raise HTTPException(503, "الدفع الإلكتروني غير متاح لهذا المتجر حاليًا.")
+        if not body.email:
+            raise HTTPException(422, "البريد الإلكتروني مطلوب للدفع.")
+    newly_created = False
+    if not order:
+        order = {
+            **owner_query, "owner_id": site["owner_id"], "site_name": site.get("name"),
+            "customer_name": body.customer_name.strip(), "phone": body.phone.strip(),
+            "email": str(body.email) if body.email else None,
+            "address": (body.address or "").strip(), "note": (body.note or "").strip(),
+            "items": items, "total": total, "currency": "SAR", "status": "new",
+            "payment_method": body.payment_method, "payment_status": "pending" if body.payment_method == "tap" else "unpaid",
+            "created_at": _now(), "payment_token": secrets.token_urlsafe(32),
+        }
+        if body.payment_method == "tap":
+            order.update(tap_merchant_id=merchant['tap_merchant_id'], tap_platform_id=os.environ['TAP_PLATFORM_ID'], mode='test')
+        try:
+            result = await db.store_orders.insert_one(order)
+            order['_id'] = result.inserted_id
+            newly_created = True
+        except DuplicateKeyError:
+            order = await db.store_orders.find_one(owner_query)
+            if order['items'] != items or order.get('payment_method') != body.payment_method:
+                raise HTTPException(409, 'مرجع الطلب مستخدم لسلة مختلفة.') from None
+    if newly_created and body.payment_method == "offline":
+        owner = await db.users.find_one({"_id": to_oid(site["owner_id"])})
+        if owner and owner.get("email"):
+            message = "طلب جديد: " + "، ".join(f"{i['name']} ×{i['qty']}" for i in items) + f". الإجمالي: {total} SAR"
+            background_tasks.add_task(send_contact_notification, owner['email'], f"متجر {site.get('name')}", body.customer_name, owner['email'], body.phone, message)
+    if body.payment_method == "tap":
+        try:
+            result = await start_store_payment(order)
+            return {"ok": True, **result}
+        except tap_service.TapError as exc:
+            raise HTTPException(exc.status_code, str(exc)) from None
+    return {"ok": True, "order_id": str(order['_id']), "total": order['total'], "payment_status": "unpaid",
             "message": "تم استلام طلبك بنجاح، سنتواصل معك لتأكيد الطلب."}
 
 
@@ -183,7 +222,7 @@ async def domain_search(q: str):
 
     results = []
     for t in tlds:
-        confirmed = enabled and (t in pricing)
+        confirmed = enabled and (t in pricing) and os.environ.get("RESELLERCLUB_PRICE_CURRENCY") == "SAR"
         results.append({
             "domain": f"{q}.{t}",
             "tld": t,

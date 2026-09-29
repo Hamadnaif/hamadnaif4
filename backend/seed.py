@@ -248,16 +248,24 @@ async def run_seed():
     await db.login_attempts.create_index("identifier")
     await db.sites.create_index("subdomain", unique=True, sparse=True)
     await db.sites.create_index("owner_id")
+    async for site in db.sites.find({"status": "published", "published_snapshot": {"$exists": False}}):
+        await db.sites.update_one({"_id": site["_id"], "published_snapshot": {"$exists": False}},
+            {"$set": {"published_snapshot": {k: site.get(k) for k in ("name", "brand", "pages", "seo")}}})
+    await db.merchant_accounts.create_index("owner_id", unique=True)
+    await db.payouts.create_index([("owner_id", 1), ("id", 1)], unique=True)
+    await db.merchant_accounts.create_index("tap_merchant_id", unique=True, partialFilterExpression={"tap_merchant_id": {"$type": "string"}})
+    await db.store_orders.create_index([("site_id", 1), ("request_id", 1)], unique=True, partialFilterExpression={"request_id": {"$type": "string"}})
+    await db.store_orders.create_index("payment_id", unique=True, partialFilterExpression={"payment_id": {"$type": "string"}})
     await db.user_sessions.create_index("session_token")
     await db.orders.create_index([("owner_id", 1), ("request_id", 1)], unique=True,
         partialFilterExpression={"provider": "tap", "request_id": {"$type": "string"}}, name="tap_request_once")
     await db.orders.create_index("payment_id", unique=True,
         partialFilterExpression={"provider": "tap", "payment_id": {"$type": "string"}}, name="tap_charge_once")
 
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@example.com")
-    admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    admin_email = os.environ.get("ADMIN_EMAIL")
+    admin_password = os.environ.get("ADMIN_PASSWORD")
     existing = await db.users.find_one({"email": admin_email})
-    if existing is None:
+    if existing is None and admin_email and admin_password:
         await db.users.insert_one({
             "email": admin_email, "name": "مدير المنصة",
             "password_hash": hash_password(admin_password), "role": "admin",
@@ -265,11 +273,6 @@ async def run_seed():
             "plan_id": None, "plan_cycle": None, "subscription_status": "none",
             "subscription_renews_at": None, "account_status": "active", "created_at": _now(),
         })
-    else:
-        updates = {"role": "admin"}
-        if not verify_password(admin_password, existing.get("password_hash") or ""):
-            updates["password_hash"] = hash_password(admin_password)
-        await db.users.update_one({"email": admin_email}, {"$set": updates})
 
     if not await db.settings.find_one({"_key": "platform"}):
         await db.settings.insert_one(dict(DEFAULT_SETTINGS))

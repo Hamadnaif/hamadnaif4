@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Globe, Loader2, Link2, AlertCircle, CheckCircle2, Clock } from "lucide-react";
 
 const DSTATUS = {
+  dns_verified: { label: "تم التحقق من DNS — بانتظار الاستضافة وSSL", icon: Clock, cls: "text-blue-600 bg-blue-50" },
   pending: { label: "بانتظار الإعداد", icon: Clock, cls: "text-amber-600 bg-amber-50" },
   verifying: { label: "جارٍ التحقق", icon: Loader2, cls: "text-blue-600 bg-blue-50" },
   connected: { label: "متصل", icon: CheckCircle2, cls: "text-green-600 bg-green-50" },

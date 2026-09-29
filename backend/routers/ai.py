@@ -44,7 +44,7 @@ async def generate(body: GenerateBody, user: dict = Depends(get_current_user)):
     try:
         text = await chat.send_message(UserMessage(text=prompt))
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"تعذّر توليد المحتوى: {e}")
+        raise HTTPException(status_code=502, detail="تعذّر توليد المحتوى حاليًا. حاول لاحقًا.")
     return {"text": text.strip() if isinstance(text, str) else str(text)}
 
 
@@ -79,7 +79,7 @@ async def generate_image(body: GenImageBody, user: dict = Depends(get_current_us
     try:
         _text, images = await chat.send_message_multimodal_response(UserMessage(text=prompt))
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"تعذّر توليد الصورة: {e}")
+        raise HTTPException(status_code=502, detail="تعذّر توليد الصورة حاليًا. حاول لاحقًا.")
     if not images:
         raise HTTPException(status_code=502, detail="لم يتم توليد صورة، جرّب وصفًا آخر")
     img = images[0]
@@ -90,7 +90,13 @@ async def generate_image(body: GenImageBody, user: dict = Depends(get_current_us
         "data_b64": img["data"], "source": "ai",
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
-    res = await db.media.insert_one(doc)
+    from storage_quota import reserve_storage, release_storage
+    await reserve_storage(user, len(raw))
+    try:
+        res = await db.media.insert_one(doc)
+    except Exception:
+        await release_storage(user["id"], len(raw))
+        raise
     return {"id": str(res.inserted_id), "url": f"/api/media/{res.inserted_id}"}
 
 
@@ -126,7 +132,7 @@ async def generate_template(body: GenTemplateBody, user: dict = Depends(get_curr
         txt = txt[txt.find("{"): txt.rfind("}") + 1]
         data = _json.loads(txt)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"تعذّر توليد القالب: {e}")
+        raise HTTPException(status_code=502, detail="تعذّر توليد القالب حاليًا. حاول لاحقًا.")
     colors = data.get("colors") or {"primary": "#0A2540", "secondary": "#D4AF37", "accent": "#2563EB"}
     sections = []
     for i, s in enumerate(data.get("sections", [])):

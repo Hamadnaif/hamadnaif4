@@ -24,6 +24,9 @@ import Reset from "@/pages/auth/Reset";
 import DashboardLayout from "@/pages/dashboard/DashboardLayout";
 import Sites from "@/pages/dashboard/Sites";
 import StartWizard from "@/pages/dashboard/StartWizard";
+import Payouts from "@/pages/dashboard/Payouts";
+import MerchantPayments from "@/pages/dashboard/MerchantPayments";
+import StorePaymentResult from "@/pages/StorePaymentResult";
 import Billing from "@/pages/dashboard/Billing";
 import Domains from "@/pages/dashboard/Domains";
 import StoreOrders from "@/pages/dashboard/StoreOrders";
@@ -73,6 +76,8 @@ function AppRouter() {
           <Route path="/dashboard" element={<Sites />} />
           <Route path="/dashboard/start" element={<StartWizard />} />
           <Route path="/dashboard/orders" element={<StoreOrders />} />
+          <Route path="/dashboard/payouts" element={<Payouts />} />
+          <Route path="/dashboard/payments" element={<MerchantPayments />} />
           <Route path="/dashboard/billing" element={<Billing />} />
           <Route path="/dashboard/domains" element={<Domains />} />
           <Route path="/dashboard/profile" element={<Profile />} />
@@ -94,6 +99,7 @@ function AppRouter() {
         </Route>
       </Route>
 
+      <Route path="/store-payment/:orderId" element={<StorePaymentResult />} />
       <Route path="/s/:subdomain" element={<PublicSite />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

@@ -31,7 +31,7 @@
     "/app/backend/tests/test_manasati_backend.py"
   ],
   "success_rate": {"backend": "95% (39/41 - 2 pre-existing pollution failures, all 6 new store tests pass)", "frontend": "100% of tested flows"},
-  "test_credentials": "Admin hamad6668@gmail.com / Manasati@2026. UI-created owner TEST_owner_7ca429a0@example.com / pass1234 owns site 'TEST Store Site' (subdomain test-store-site-78l7, published, has 1 store order).",
+  "test_credentials": "Admin hamad6668@gmail.com / [REDACTED — supply test credentials through environment variables]. UI-created owner TEST_owner_7ca429a0@example.com / pass1234 owns site 'TEST Store Site' (subdomain test-store-site-78l7, published, has 1 store order).",
   "seed_data_creation": "One published store site (test-store-site-78l7) with 3 seeded products and 1 real store order (TEST_UI_Buyer, 0509876543, SAR 270). Plus TEST_* customers created during pytest for the 6 store tests.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

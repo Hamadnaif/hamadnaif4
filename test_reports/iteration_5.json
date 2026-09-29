@@ -31,7 +31,7 @@
     "/app/backend/tests/test_manasati_backend.py"
   ],
   "success_rate": {"backend": "96% (48/50 — the 2 failures are xdist ordering, not product bugs)", "frontend": "88% (7/8 QA items pass; per-page <title> regression is the one miss)"},
-  "test_credentials": "Admin hamad6668@gmail.com / Manasati@2026. Free-plan cap tests register fresh TEST_<uuid>@example.com customers each run — all deterministic.",
+  "test_credentials": "Admin hamad6668@gmail.com / [REDACTED — supply test credentials through environment variables]. Free-plan cap tests register fresh TEST_<uuid>@example.com customers each run — all deterministic.",
   "seed_data_creation": "Created several TEST_<uuid>@example.com customers with 1 draft site each (from cap tests + AI E2E); safe to leave.",
   "retest_needed": true,
   "should_main_agent_self_test": true,

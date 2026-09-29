@@ -112,7 +112,7 @@ export default function Sites() {
                 </div>
                 <div className="p-3 grid grid-cols-2 gap-2">
                   <Button variant="outline" onClick={() => navigate(`/editor/${s.id}`)} className="rounded-xl" data-testid={`site-edit-${s.id}`}><Pencil className="w-4 h-4 ms-1" /> تعديل</Button>
-                  <Button variant="outline" onClick={() => window.open(`/s/${s.subdomain}`, "_blank")} className="rounded-xl" data-testid={`site-preview-${s.id}`}><Eye className="w-4 h-4 ms-1" /> معاينة</Button>
+                  <Button variant="outline" onClick={() => window.open(`/s/${s.subdomain}?preview=${s.id}`, "_blank", "noopener")} className="rounded-xl" data-testid={`site-preview-${s.id}`}><Eye className="w-4 h-4 ms-1" /> معاينة</Button>
                   <Button onClick={() => togglePublish(s)} className={`rounded-xl ${s.status === "published" ? "bg-amber-500 hover:bg-amber-600" : "brand-bg"} text-white`} data-testid={`site-publish-${s.id}`}>
                     {s.status === "published" ? <><PowerOff className="w-4 h-4 ms-1" /> إلغاء النشر</> : <><Rocket className="w-4 h-4 ms-1" /> نشر</>}
                   </Button>

@@ -31,6 +31,7 @@ export default function StoreOrders() {
                 {(o.items || []).map((it, x) => <div key={x} className="flex justify-between"><span>{it.name} ×{it.qty}</span><span>{(it.price * it.qty).toFixed(2)}</span></div>)}
                 <div className="flex justify-between font-bold brand-text pt-1 border-t border-slate-200"><span>الإجمالي</span><span>{o.total} {o.currency}</span></div>
               </div>
+              <p className="text-sm mt-3">الدفع: {{paid:"مدفوع", pending:"بانتظار الدفع", failed:"فشل الدفع", unpaid:"غير مدفوع"}[o.payment_status] || "غير مدفوع"}{o.mode === "test" && " — تجريبي"}</p>
               {o.note && <p className="text-slate-500 text-sm mt-2">ملاحظة: {o.note}</p>}
             </div>
           ))}

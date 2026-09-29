@@ -21,10 +21,15 @@ async def overview(user: dict = Depends(get_current_user)):
     sites_count = await db.sites.count_documents({"owner_id": user["id"]})
     domains = await db.domain_orders.find({"owner_id": user["id"]}).sort("created_at", -1).to_list(100)
     orders = await db.orders.find({"owner_id": user["id"]}).sort("created_at", -1).to_list(100)
+    last_payment = await db.orders.find_one({"_id": to_oid(user.get("subscription_payment_order"))}) if user.get("subscription_payment_order") else None
     return {
+        "paid_amount": (last_payment or {}).get("amount"),
+        "paid_currency": (last_payment or {}).get("currency"),
         "plan": plan,
         "plan_cycle": user.get("plan_cycle"),
         "subscription_status": user.get("subscription_status"),
+        "auto_renew": False,
+        "expiry_policy": "عند انتهاء الفترة تتوقف المزايا المدفوعة وتبقى بيانات مواقعك محفوظة. التجديد يدوي.",
         "subscription_renews_at": user.get("subscription_renews_at"),
         "sites_count": sites_count,
         "domains": [serialize(d) for d in domains],
@@ -37,7 +42,7 @@ async def overview(user: dict = Depends(get_current_user)):
 @router.get("/store-orders")
 async def store_orders(user: dict = Depends(get_current_user)):
     docs = await db.store_orders.find({"owner_id": user["id"]}).sort("created_at", -1).to_list(500)
-    return [serialize(d) for d in docs]
+    return [serialize({k: v for k, v in d.items() if k != "payment_token"}) for d in docs]
 
 
 class SubscribeBody(BaseModel):
