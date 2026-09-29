@@ -47,8 +47,6 @@ function defaultSection(type) {
     cta: { title: "جاهز للبدء؟", subtitle: "تواصل معنا اليوم.", button_text: "احجز الآن", button_link: "#contact" },
     store: { title: "منتجاتنا", currency: "SAR", products: [{ name: "منتج", description: "وصف المنتج", price: "100", image: "" }] },
     logos: { title: "شركاؤنا وعملاؤنا", logos: [] },
-    store: { title: "منتجاتنا", currency: "SAR", products: [{ name: "منتج", description: "وصف المنتج", price: "100", image: "" }] },
-    logos: { title: "شركاؤنا وعملاؤنا", logos: [] },
     testimonials: { title: "آراء العملاء", items: [{ name: "عميل", role: "", text: "رأي العميل" }] },
     faq: { title: "أسئلة شائعة", items: [{ q: "سؤال؟", a: "إجابة." }] },
     contact: { title: "تواصل معنا", subtitle: "سنسعد بالرد عليك", show_phone: true, show_email: true },
@@ -303,24 +301,6 @@ function SectionProperties({ section, onChange, siteName }) {
           <ImageUpload onChange={(v) => v && set("logos", [...(d.logos || []), v])} testid="prop-logos-add" />
         </Field>
       </>);
-    case "store":
-      return (<>
-        <Field label="العنوان"><input value={d.title || ""} onChange={(e) => set("title", e.target.value)} className={inputCls} /></Field>
-        <Field label="العملة"><select value={d.currency || "SAR"} onChange={(e) => set("currency", e.target.value)} className={inputCls}><option value="SAR">ريال سعودي (SAR)</option><option value="AED">درهم (AED)</option><option value="KWD">دينار كويتي (KWD)</option><option value="QAR">ريال قطري (QAR)</option></select></Field>
-        <Field label="المنتجات"><ListEditor items={d.products || []} onChange={(v) => set("products", v)} addLabel="إضافة منتج" fields={[{ key: "name", label: "اسم المنتج" }, { key: "description", label: "الوصف", type: "textarea" }, { key: "price", label: "السعر" }, { key: "image", label: "صورة", type: "image" }]} /></Field>
-      </>);
-    case "logos":
-      return (<>
-        <Field label="العنوان"><input value={d.title || ""} onChange={(e) => set("title", e.target.value)} className={inputCls} /></Field>
-        <Field label="الشعارات">
-          <div className="grid grid-cols-3 gap-2 mb-2">
-            {(d.logos || []).map((img, i) => (
-              <div key={i} className="relative"><img src={mediaUrl(img)} alt="" className="w-full h-16 object-contain rounded-lg border bg-white p-1" /><button onClick={() => set("logos", d.logos.filter((_, x) => x !== i))} className="absolute top-1 end-1 bg-red-500 text-white rounded-full w-5 h-5 grid place-items-center text-xs">×</button></div>
-            ))}
-          </div>
-          <ImageUpload onChange={(v) => v && set("logos", [...(d.logos || []), v])} testid="prop-logos-add" />
-        </Field>
-      </>);
     case "faq":
       return (<>
         <Field label="العنوان"><input value={d.title || ""} onChange={(e) => set("title", e.target.value)} className={inputCls} /></Field>
@@ -431,7 +411,7 @@ export default function Editor() {
             <button onClick={() => setDevice("desktop")} className={`p-1.5 rounded ${device === "desktop" ? "bg-white shadow" : ""}`} data-testid="device-desktop"><Monitor className="w-4 h-4" /></button>
             <button onClick={() => setDevice("mobile")} className={`p-1.5 rounded ${device === "mobile" ? "bg-white shadow" : ""}`} data-testid="device-mobile"><Smartphone className="w-4 h-4" /></button>
           </div>
-          <Button variant="outline" size="sm" onClick={() => window.open(`/s/${site.subdomain}`, "_blank")} className="rounded-lg" data-testid="editor-preview"><Eye className="w-4 h-4 ms-1" /> معاينة</Button>
+          <Button variant="outline" size="sm" onClick={() => window.open(`/s/${site.subdomain}?preview=${site.id}`, "_blank", "noopener")} className="rounded-lg" data-testid="editor-preview"><Eye className="w-4 h-4 ms-1" /> معاينة</Button>
           <Button size="sm" onClick={() => save(false)} disabled={saving} variant="outline" className="rounded-lg" data-testid="editor-save"><Save className="w-4 h-4 ms-1" /> حفظ</Button>
           <Button size="sm" onClick={() => save(true)} disabled={saving} className="brand-bg text-white rounded-lg" data-testid="editor-publish">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Rocket className="w-4 h-4 ms-1" /> نشر</>}</Button>
         </div>
