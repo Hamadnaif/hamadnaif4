@@ -5,11 +5,11 @@ Two auth methods coexist:
 2. Emergent Google login (cookie session_token, stored in user_sessions collection)
 
 ## Admin
-Email: hamad6668@gmail.com  Password: Manasati@2026  Role: admin
+Email: hamad6668@gmail.com  Password: [REDACTED — supply test credentials through environment variables]  Role: admin
 
 ## API quick test
 ```
-curl -c cookies.txt -X POST http://localhost:8001/api/auth/login -H "Content-Type: application/json" -d '{"email":"hamad6668@gmail.com","password":"Manasati@2026"}'
+curl -c cookies.txt -X POST http://localhost:8001/api/auth/login -H "Content-Type: application/json" -d '{"email":"hamad6668@gmail.com","password":"[REDACTED — supply test credentials through environment variables]"}'
 curl -b cookies.txt http://localhost:8001/api/auth/me
 curl -b cookies.txt http://localhost:8001/api/admin/stats
 ```
