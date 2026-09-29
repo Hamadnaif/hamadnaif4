@@ -1,7 +1,10 @@
 import re
 import random
 import string
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from functools import wraps
+import secrets
+from pymongo import ReturnDocument
 from typing import Optional, List, Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -9,8 +12,28 @@ from bson import ObjectId
 
 from db import db, serialize, to_oid
 from auth import get_current_user
+from subscriptions import has_paid_access
 
 router = APIRouter(prefix="/sites", tags=["sites"])
+
+
+def serialize_creation(func):
+    @wraps(func)
+    async def wrapped(*args, **kwargs):
+        user = kwargs['user']
+        lock = secrets.token_hex(16)
+        claimed = await db.users.find_one_and_update({'_id': to_oid(user['id']), '$or': [
+            {'site_create_until': {'$exists': False}}, {'site_create_until': {'$lt': _now()}}]},
+            {'$set': {'site_create_lock': lock, 'site_create_until': (datetime.now(timezone.utc)+timedelta(minutes=2)).isoformat()}},
+            return_document=ReturnDocument.AFTER)
+        if not claimed:
+            raise HTTPException(409, 'جارٍ إنشاء موقع لهذا الحساب. انتظر قليلًا وأعد المحاولة.')
+        try:
+            return await func(*args, **kwargs)
+        finally:
+            await db.users.update_one({'_id': to_oid(user['id']), 'site_create_lock': lock},
+                                      {'$unset': {'site_create_lock': '', 'site_create_until': ''}})
+    return wrapped
 
 
 def _now():
@@ -34,7 +57,7 @@ async def _unique_subdomain(name: str) -> str:
 
 
 async def _get_plan_limits(user: dict) -> dict:
-    if user.get("plan_id"):
+    if has_paid_access(user):
         plan = await db.plans.find_one({"_id": to_oid(user["plan_id"])})
         if plan:
             return plan.get("limits", {})
@@ -58,7 +81,7 @@ _LIMIT_MSG_PAID = "وصلت للحد الأقصى للمواقع في باقتك
 
 
 def _limit_msg(user: dict) -> str:
-    return _LIMIT_MSG_PAID if user.get("plan_id") else _LIMIT_MSG_FREE
+    return _LIMIT_MSG_PAID if has_paid_access(user) else _LIMIT_MSG_FREE
 
 
 async def _at_site_limit(user: dict) -> bool:
@@ -66,7 +89,7 @@ async def _at_site_limit(user: dict) -> bool:
     paid plans use an active-site cap (deleting frees a slot)."""
     limits = await _get_plan_limits(user)
     max_sites = limits.get("sites", 1)
-    if user.get("plan_id"):
+    if has_paid_access(user):
         count = await db.sites.count_documents({"owner_id": user["id"]})
         return count >= max_sites
     oid = to_oid(user["id"])
@@ -79,7 +102,7 @@ async def _at_site_limit(user: dict) -> bool:
 
 async def _bump_created(user: dict):
     """Increment the lifetime creation counter for free-plan users."""
-    if user.get("plan_id"):
+    if has_paid_access(user):
         return
     oid = to_oid(user["id"])
     if not oid:
@@ -87,7 +110,7 @@ async def _bump_created(user: dict):
     u = await db.users.find_one({"_id": oid})
     created = (u or {}).get("sites_created")
     if created is None:
-        created = await db.sites.count_documents({"owner_id": user["id"]})
+        created = max(0, await db.sites.count_documents({"owner_id": user["id"]}) - 1)
     await db.users.update_one({"_id": oid}, {"$set": {"sites_created": created + 1}})
 
 
@@ -114,6 +137,7 @@ async def list_sites(user: dict = Depends(get_current_user)):
 
 
 @router.post("")
+@serialize_creation
 async def create_site(body: CreateSiteBody, user: dict = Depends(get_current_user)):
     if await _at_site_limit(user):
         raise HTTPException(status_code=403, detail=_limit_msg(user))
@@ -150,10 +174,14 @@ class AISiteBody(BaseModel):
 
 
 @router.post("/from-ai")
+@serialize_creation
 async def create_site_from_ai(body: AISiteBody, user: dict = Depends(get_current_user)):
     if await _at_site_limit(user):
         raise HTTPException(status_code=403, detail=_limit_msg(user))
     config = body.config or {}
+    limits = await _get_plan_limits(user)
+    if not isinstance(config.get("pages", []), list) or len(config.get("pages", [])) > limits.get("pages", 5):
+        raise HTTPException(422, "عدد صفحات القالب غير مسموح في باقتك.")
     subdomain = await _unique_subdomain(body.name)
     doc = {
         "owner_id": user["id"], "name": body.name.strip(), "template_id": None, "template_name": "بالذكاء الاصطناعي",
@@ -203,7 +231,8 @@ async def delete_site(site_id: str, user: dict = Depends(get_current_user)):
 async def publish_site(site_id: str, user: dict = Depends(get_current_user)):
     site = await _owned_site(site_id, user)
     await db.sites.update_one({"_id": site["_id"]},
-                             {"$set": {"status": "published", "published_at": _now(), "updated_at": _now()}})
+                             {"$set": {"status": "published", "published_at": _now(), "updated_at": _now(),
+                                       "published_snapshot": {k: site.get(k) for k in ("name", "brand", "pages", "seo")}}})
     return serialize(await db.sites.find_one({"_id": site["_id"]}))
 
 
@@ -223,10 +252,10 @@ async def connect_domain(site_id: str, body: DomainBody, user: dict = Depends(ge
     domain = body.custom_domain.lower().strip().replace("https://", "").replace("http://", "").strip("/")
     if not re.match(r"^[a-z0-9.-]+\.[a-z]{2,}$", domain):
         raise HTTPException(status_code=400, detail="صيغة النطاق غير صحيحة")
-    records = [
-        {"type": "A", "name": "@", "value": "76.76.21.21", "note": "وجّه النطاق الرئيسي إلى خادم المنصة"},
-        {"type": "CNAME", "name": "www", "value": f"{site['subdomain']}.manasati.sa", "note": "للنطاق الفرعي www"},
-    ]
+    from domain_connection import domain_records
+    domain, records = domain_records(domain, str(site["_id"]))
+    if await db.sites.find_one({"custom_domain": domain, "_id": {"$ne": site["_id"]}}):
+        raise HTTPException(409, "النطاق مربوط بموقع آخر.")
     await db.sites.update_one({"_id": site["_id"]}, {"$set": {
         "custom_domain": domain, "custom_domain_status": "pending",
         "custom_domain_records": records, "updated_at": _now()}})
@@ -239,11 +268,12 @@ async def verify_domain(site_id: str, user: dict = Depends(get_current_user)):
     site = await _owned_site(site_id, user)
     if not site.get("custom_domain"):
         raise HTTPException(status_code=400, detail="لا يوجد نطاق مربوط")
-    # Real DNS verification requires production DNS + wildcard setup (disabled).
-    await db.sites.update_one({"_id": site["_id"]}, {"$set": {"custom_domain_status": "verifying", "updated_at": _now()}})
-    return {"status": "verifying",
-            "message": "التحقق الحقيقي من DNS وتفعيل SSL يتطلب إعداد النطاق الرئيسي و wildcard DNS للمنصة. سيتم تفعيله بعد توفير إعدادات DNS.",
-            "disabled": True}
+    from domain_connection import verify_records
+    verified = await verify_records(site)
+    state = "dns_verified" if verified else "pending"
+    await db.sites.update_one({"_id": site["_id"]}, {"$set": {"custom_domain_status": state, "updated_at": _now()}})
+    return {"status": state, "disabled": False, "message":
+            "تم التحقق من DNS. تفعيل الاستضافة وشهادة SSL ما زال مطلوبًا." if verified else "لم تظهر سجلات DNS المطلوبة بعد. راجع القيم وأعد المحاولة لاحقًا."}
 
 
 @router.get("/{site_id}/messages")
