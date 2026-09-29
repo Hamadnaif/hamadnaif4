@@ -1,23 +1,26 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { api, apiError, mediaUrl } from "@/lib/api";
 import SectionRenderer from "@/components/SectionRenderer";
+import { toast } from "sonner";
 import { Loader2, Frown } from "lucide-react";
 
 export default function PublicSite() {
   const { subdomain } = useParams();
+  const [params] = useSearchParams();
+  const previewId = params.get("preview");
   const [site, setSite] = useState(undefined);
   const [pageId, setPageId] = useState(null);
 
   useEffect(() => {
-    api.get(`/public/site/${subdomain}`).then((r) => {
+    api.get(previewId ? `/sites/${previewId}` : `/public/site/${subdomain}`).then((r) => {
       setSite(r.data);
       const home = (r.data.pages || []).find((p) => p.is_home) || r.data.pages?.[0];
       setPageId(home?.id);
       const seo = home?.seo || {};
       if (seo.title) document.title = seo.title;
     }).catch(() => setSite(null));
-  }, [subdomain]);
+  }, [subdomain, previewId]);
 
   const onContact = async (form) => {
     try { await api.post(`/public/site/${subdomain}/contact`, form); return true; }
@@ -25,8 +28,8 @@ export default function PublicSite() {
   };
 
   const onOrder = async (order) => {
-    try { await api.post(`/public/site/${subdomain}/order`, order); return true; }
-    catch { return false; }
+    try { const { data } = await api.post(`/public/site/${subdomain}/order`, order); if (data.redirect_url) window.location.assign(data.redirect_url); return true; }
+    catch (e) { toast.error(apiError(e.response?.data?.detail)); return false; }
   };
 
   if (site === undefined) return <div className="min-h-screen grid place-items-center"><Loader2 className="w-8 h-8 animate-spin brand-accent-text" /></div>;
@@ -43,6 +46,7 @@ export default function PublicSite() {
 
   return (
     <div style={{ "--brand-primary": colors.primary, "--brand-secondary": colors.secondary, "--brand-accent": colors.accent, fontFamily: brand.font || "Tajawal" }} data-testid="public-site">
+      {previewId && <div className="bg-amber-100 text-amber-900 text-center p-3">معاينة المسودة — هذه التعديلات لا تظهر للزوار حتى النشر.</div>}
       <nav className="sticky top-0 z-50 glass border-b border-slate-200/60">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -60,7 +64,7 @@ export default function PublicSite() {
       </nav>
       <div>
         {(page?.sections || []).map((s) => (
-          <SectionRenderer key={s.id} section={s} onContact={onContact} onOrder={onOrder} settings={{ contact_email: "", contact_phone: "" }} />
+          <SectionRenderer key={s.id} section={s} onContact={previewId ? undefined : onContact} onOrder={previewId ? undefined : onOrder} settings={{ contact_email: "", contact_phone: "", online_payments: site.online_payments }} />
         ))}
       </div>
     </div>
