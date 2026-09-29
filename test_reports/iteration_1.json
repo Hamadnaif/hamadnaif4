@@ -23,7 +23,7 @@
   ],
   "updated_files": ["/app/backend/tests/test_manasati_backend.py"],
   "success_rate": { "backend": "100% (31/31)", "frontend": "100% of tested flows" },
-  "test_credentials": "Admin: hamad6668@gmail.com / Manasati@2026. Customer: freshly registered TEST_ui_*@example.com / pass1234 during test run.",
+  "test_credentials": "Admin: hamad6668@gmail.com / [REDACTED — supply test credentials through environment variables]. Customer: freshly registered TEST_ui_*@example.com / pass1234 during test run.",
   "seed_data_creation": "Created customer TEST_ui_33057fe5@example.com with site 'TEST My Site' (subdomain test-my-site-uabr, published) + submitted 1 public-site contact and 2 platform contacts. Plus multiple TEST_* users from pytest.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

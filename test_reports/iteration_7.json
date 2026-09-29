@@ -18,7 +18,7 @@
     "/app/backend/tests/test_brand_identity.py (new)"
   ],
   "success_rate": {"backend": "100% (21/21 relevant tests, incl. 5 new brand identity tests)", "frontend": "100% on rebrand acceptance criteria (navbar logo, hero tagline, hero illustration, footer light logo, mobile menu, no overflow at 1920/390/360, pricing toggles, 30 template cards, live preview palette independence + close, auth shell brand, admin login+sidebar+settings values, customer login+sidebar, editor brand logo, customer site brand preserved)"},
-  "test_credentials": "Admin: hamad6668@gmail.com / Manasati@2026 (verified). Customer: TEST_wiz_4aab11a9@example.com / Passw0rd!123 (verified; free-plan lifetime quota already consumed — read-only regression only, as documented).",
+  "test_credentials": "Admin: hamad6668@gmail.com / [REDACTED — supply test credentials through environment variables] (verified). Customer: TEST_wiz_4aab11a9@example.com / Passw0rd!123 (verified; free-plan lifetime quota already consumed — read-only regression only, as documented).",
   "seed_data_creation": "No new sites/orders/contacts created for this iteration beyond the transient session fixtures in the untouched existing pytest suite. No customer site content was modified.",
   "retest_needed": false,
   "should_main_agent_self_test": false,

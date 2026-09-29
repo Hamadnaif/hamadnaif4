@@ -22,7 +22,7 @@
   ],
   "updated_files": ["/app/backend/tests/test_manasati_backend.py"],
   "success_rate": { "backend": "100% (35/35)", "frontend": "100% of tested flows" },
-  "test_credentials": "Admin hamad6668@gmail.com / Manasati@2026. Fresh customers TEST_ui_*@example.com / pass1234 created during test run.",
+  "test_credentials": "Admin hamad6668@gmail.com / [REDACTED — supply test credentials through environment variables]. Fresh customers TEST_ui_*@example.com / pass1234 created during test run.",
   "seed_data_creation": "New customer TEST_ui_fc47b0aa@example.com with site 'TEST S 2e200' (subdomain test-s-2e200-4b5v, published) using the new startup (شركة ناشئة) template with additional team/pricing/cta sections added on top. Plus several TEST_* users from pytest and platform + site contact submissions that triggered real Resend emails to the admin/owner.",
   "retest_needed": false,
   "main_agent_can_self_test": true,
