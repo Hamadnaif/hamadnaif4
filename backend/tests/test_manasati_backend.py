@@ -20,8 +20,8 @@ if not BASE_URL:
 
 API = f"{BASE_URL}/api"
 
-ADMIN_EMAIL = "hamad6668@gmail.com"
-ADMIN_PASSWORD = "Manasati@2026"
+ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL", "")
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD", "")
 
 
 def _new_email():
@@ -30,6 +30,8 @@ def _new_email():
 
 @pytest.fixture(scope="session")
 def admin_session():
+    if not ADMIN_EMAIL or not ADMIN_PASSWORD:
+        pytest.skip("Set TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD for administrator integration tests")
     s = requests.Session()
     r = s.post(f"{API}/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
     assert r.status_code == 200, f"Admin login failed: {r.status_code} {r.text}"
