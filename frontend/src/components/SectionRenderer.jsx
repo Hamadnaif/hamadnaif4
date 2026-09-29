@@ -310,18 +310,19 @@ function LogosBlock({ d }) {
   );
 }
 
-function StoreBlock({ d, onOrder }) {
+function StoreBlock({ d, onOrder, sectionId, onlinePayments }) {
   const products = d.products || [];
   const currency = d.currency || "SAR";
   const [cart, setCart] = useState({});
   const [checkout, setCheckout] = useState(false);
-  const [form, setForm] = useState({ customer_name: "", phone: "", address: "", note: "" });
+  const [form, setForm] = useState({ customer_name: "", phone: "", address: "", note: "", email: "", payment_method: "offline" });
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
 
   const add = (i) => setCart((c) => ({ ...c, [i]: (c[i] || 0) + 1 }));
   const sub = (i) => setCart((c) => { const n = { ...c }; n[i] = (n[i] || 0) - 1; if (n[i] <= 0) delete n[i]; return n; });
-  const items = Object.entries(cart).map(([i, qty]) => ({ ...products[i], qty }));
+  const items = Object.entries(cart).map(([i, qty]) => ({ ...products[i], qty, product_ref: `${sectionId}:${i}` }));
   const total = items.reduce((s, it) => s + (parseFloat(it.price) || 0) * it.qty, 0);
   const count = items.reduce((s, it) => s + it.qty, 0);
 
@@ -330,12 +331,12 @@ function StoreBlock({ d, onOrder }) {
     if (!onOrder) return;
     setSending(true);
     const ok = await onOrder({
-      customer_name: form.customer_name, phone: form.phone, address: form.address, note: form.note,
-      items: items.map((it) => ({ name: it.name, price: parseFloat(it.price) || 0, qty: it.qty })),
+      ...form, email: form.email || null, request_id: requestId,
+      items: items.map((it) => ({ product_ref: it.product_ref, name: it.name, qty: it.qty })),
       total, currency,
     });
     setSending(false);
-    if (ok) { setDone(true); setCart({}); setCheckout(false); }
+    if (ok) { setDone(true); setCart({}); setCheckout(false); setRequestId(crypto.randomUUID()); }
   };
 
   return (
@@ -385,7 +386,8 @@ function StoreBlock({ d, onOrder }) {
             <input required placeholder="رقم الجوال" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-[var(--brand-accent)]" data-testid="store-phone" />
             <input placeholder="عنوان التوصيل" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-[var(--brand-accent)]" data-testid="store-address" />
             <textarea placeholder="ملاحظات (اختياري)" rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-[var(--brand-accent)]" />
-            <p className="text-xs text-amber-600">الدفع عند الاستلام أو التحويل — الدفع الإلكتروني يُفعّل بعد ربط بوابة الدفع.</p>
+            {onlinePayments && <><label className="block text-sm">طريقة الدفع<select className="w-full border rounded-xl p-3 mt-1" value={form.payment_method} onChange={(e) => setForm({...form, payment_method: e.target.value})}><option value="offline">عند الاستلام أو التحويل</option><option value="tap">Tap — دفع تجريبي</option></select></label>{form.payment_method === "tap" && <input type="email" required placeholder="البريد الإلكتروني للدفع" value={form.email} onChange={(e) => setForm({...form, email:e.target.value})} className="w-full rounded-xl border px-4 py-3" />}</>}
+            <p className="text-xs text-amber-600">{form.payment_method === "tap" ? "ستنتقل إلى Tap لإتمام دفع تجريبي. لا تُحصّل أموال حقيقية." : "الدفع عند الاستلام أو التحويل حسب الاتفاق مع المتجر."}</p>
             <Button type="submit" disabled={sending || !onOrder} className="w-full brand-bg text-white rounded-full py-5" data-testid="store-submit-order">{sending ? "جارٍ الإرسال..." : "تأكيد الطلب"}</Button>
           </form>
         )}
@@ -403,7 +405,7 @@ export default function SectionRenderer({ section, onContact, onOrder, settings 
     case "gallery": return <Gallery d={d} />;
     case "image": return <ImageBlock d={d} />;
     case "products": return <Products d={d} />;
-    case "store": return <StoreBlock d={d} onOrder={onOrder} />;
+    case "store": return <StoreBlock d={d} onOrder={onOrder} sectionId={section.id} onlinePayments={settings?.online_payments} />;
     case "logos": return <LogosBlock d={d} />;
     case "testimonials": return <Testimonials d={d} />;
     case "team": return <TeamBlock d={d} />;
